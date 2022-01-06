@@ -63,6 +63,7 @@ class TypingIndicator extends StatelessWidget {
                         package: 'stream_chat_flutter',
                         height: 4,
                       ),
+                      const SizedBox(width: 10,),
                       Text(
                         context.translations.userTypingText(data),
                         maxLines: 1,
