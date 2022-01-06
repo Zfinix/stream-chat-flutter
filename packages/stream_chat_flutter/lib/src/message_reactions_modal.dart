@@ -190,60 +190,54 @@ class MessageReactionsModal extends StatelessWidget {
   ) {
     final isCurrentUser = reaction.user?.id == currentUser.id;
     final chatThemeData = StreamChatTheme.of(context);
-    return ConstrainedBox(
-      constraints: BoxConstraints.loose(const Size(
-        64,
-        98,
-      )),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              UserAvatar(
-                onTap: onUserAvatarTap,
-                user: reaction.user!,
-                constraints: const BoxConstraints.tightFor(
-                  height: 64,
-                  width: 64,
-                ),
-                onlineIndicatorConstraints: const BoxConstraints.tightFor(
-                  height: 12,
-                  width: 12,
-                ),
-                borderRadius: BorderRadius.circular(32),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            UserAvatar(
+              onTap: onUserAvatarTap,
+              user: reaction.user!,
+              constraints: const BoxConstraints.tightFor(
+                height: 64,
+                width: 64,
               ),
-              Positioned(
-                bottom: 6,
-                left: isCurrentUser ? -3 : null,
-                right: isCurrentUser ? -3 : null,
-                child: Align(
-                  alignment:
-                      reverse ? Alignment.centerRight : Alignment.centerLeft,
-                  child: ReactionBubble(
-                    reactions: [reaction],
-                    flipTail: !reverse,
-                    borderColor:
-                        messageTheme.reactionsBorderColor ?? Colors.transparent,
-                    backgroundColor: messageTheme.reactionsBackgroundColor ??
-                        Colors.transparent,
-                    maskColor: chatThemeData.colorTheme.barsBg,
-                    tailCirclesSpacing: 1,
-                    highlightOwnReactions: false,
-                  ),
+              onlineIndicatorConstraints: const BoxConstraints.tightFor(
+                height: 12,
+                width: 12,
+              ),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            Positioned(
+              bottom: 6,
+              left: isCurrentUser ? -3 : null,
+              right: isCurrentUser ? -3 : null,
+              child: Align(
+                alignment:
+                    reverse ? Alignment.centerRight : Alignment.centerLeft,
+                child: ReactionBubble(
+                  reactions: [reaction],
+                  flipTail: !reverse,
+                  borderColor:
+                      messageTheme.reactionsBorderColor ?? Colors.transparent,
+                  backgroundColor: messageTheme.reactionsBackgroundColor ??
+                      Colors.transparent,
+                  maskColor: chatThemeData.colorTheme.barsBg,
+                  tailCirclesSpacing: 1,
+                  highlightOwnReactions: false,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            reaction.user!.name.split(' ')[0],
-            style: chatThemeData.textTheme.footnoteBold,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          reaction.user!.name.split(' ')[0],
+          style: chatThemeData.textTheme.footnoteBold,
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
