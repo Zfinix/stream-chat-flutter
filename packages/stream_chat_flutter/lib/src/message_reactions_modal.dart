@@ -182,7 +182,7 @@ class MessageReactionsModal extends StatelessWidget {
       ),
     );
   }
-
+  
   Widget _buildReaction(
     Reaction reaction,
     User currentUser,
