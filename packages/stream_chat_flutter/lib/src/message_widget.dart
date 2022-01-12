@@ -1241,7 +1241,7 @@ class _MessageWidgetState extends State<MessageWidget>
       final uploadRemaining =
           message.attachments.where((it) => !it.uploadState.isSuccess).length;
       if (uploadRemaining == 0) {
-        return StreamSvgIcon.check(
+        return StreamSvgIcon.checkAll(
           size: style!.fontSize,
           color: IconTheme.of(context).color!.withOpacity(0.5),
         );
