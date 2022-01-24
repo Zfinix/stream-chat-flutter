@@ -540,7 +540,8 @@ class _ChannelListViewState extends State<ChannelListView> {
                         widget.onMoreDetailsPressed!(channel);
                       }
                     : () {
-                        showModalBottomSheet(
+                        /// TODO Add Menu
+                        /*  showModalBottomSheet(
                           clipBehavior: Clip.hardEdge,
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.only(
@@ -557,7 +558,7 @@ class _ChannelListViewState extends State<ChannelListView> {
                               },
                             ),
                           ),
-                        );
+                        ); */
                       },
               ),
               if ([
