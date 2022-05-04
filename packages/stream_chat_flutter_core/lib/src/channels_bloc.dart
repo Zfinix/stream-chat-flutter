@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:stream_chat/stream_chat.dart';
 import 'package:stream_chat_flutter_core/src/channel_list_core.dart';
 import 'package:stream_chat_flutter_core/src/stream_chat_core.dart';
+import 'package:stream_chat_flutter_core/src/stream_controller_extension.dart';
 
 /// Widget dedicated to the management of a channel list with pagination
 /// [ChannelsBloc] is used together with [ChannelListCore] to manage a list of
@@ -15,6 +18,7 @@ import 'package:stream_chat_flutter_core/src/stream_chat_core.dart';
 /// using Flutter's [BuildContext].
 ///
 /// API docs: https://getstream.io/chat/docs/flutter-dart/query_channels/
+@Deprecated("Use 'StreamChannelListController' instead")
 class ChannelsBloc extends StatefulWidget {
   /// Creates a new [ChannelsBloc]. The parameter [child] must be supplied and
   /// not null.
@@ -115,7 +119,7 @@ class ChannelsBlocState extends State<ChannelsBloc>
     }
 
     if (_channelsController.hasValue) {
-      _queryChannelsLoadingController.add(true);
+      _queryChannelsLoadingController.safeAdd(true);
     }
 
     try {
@@ -134,14 +138,14 @@ class ChannelsBlocState extends State<ChannelsBloc>
       )) {
         newChannels = channels;
         if (clear) {
-          _channelsController.add(channels);
+          _channelsController.safeAdd(channels);
         } else {
           final temp = oldChannels + channels;
-          _channelsController.add(temp);
+          _channelsController.safeAdd(temp);
         }
         if (_channelsController.hasValue &&
             _queryChannelsLoadingController.value) {
-          _queryChannelsLoadingController.sink.add(false);
+          _queryChannelsLoadingController.safeAdd(false);
         }
       }
       if (newChannels.isEmpty || newChannels.length < paginationParams.limit) {
@@ -149,11 +153,11 @@ class ChannelsBlocState extends State<ChannelsBloc>
       }
     } catch (e, stk) {
       // reset loading controller
-      _queryChannelsLoadingController.sink.add(false);
+      _queryChannelsLoadingController.safeAdd(false);
       if (_channelsController.hasValue) {
-        _queryChannelsLoadingController.addError(e, stk);
+        _queryChannelsLoadingController.safeAddError(e, stk);
       } else {
-        _channelsController.addError(e, stk);
+        _channelsController.safeAddError(e, stk);
       }
     }
   }
@@ -199,7 +203,7 @@ class ChannelsBlocState extends State<ChannelsBloc>
           if (widget.channelsComparator != null) {
             newChannels.sort(widget.channelsComparator);
           }
-          _channelsController.add(newChannels);
+          _channelsController.safeAdd(newChannels);
         }));
       }
 
@@ -211,7 +215,7 @@ class ChannelsBlocState extends State<ChannelsBloc>
           if (channelIndex > -1) {
             final channel = newChannels.removeAt(channelIndex);
             _hiddenChannels.add(channel);
-            _channelsController.add(newChannels);
+            _channelsController.safeAdd(newChannels);
           }
         }))
         ..add(client
@@ -221,7 +225,7 @@ class ChannelsBlocState extends State<ChannelsBloc>
         )
             .listen((e) {
           final channel = e.channel;
-          _channelsController.add(List.from(
+          _channelsController.safeAdd(List.from(
             (channels ?? [])..removeWhere((c) => c.cid == channel?.cid),
           ));
         }));

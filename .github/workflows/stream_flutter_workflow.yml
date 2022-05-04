@@ -2,8 +2,8 @@ name: stream_flutter_workflow
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-  flutter_version: "2.5.1"
-  melos_version: "1.0.0-dev.10"
+  flutter_version: "2.10.5"
+  melos_version: "2.1.0"
 
 on:
   pull_request:
@@ -15,6 +15,7 @@ on:
 jobs:
   analyze:
     timeout-minutes: 15
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: "Git Checkout"
@@ -34,7 +35,7 @@ jobs:
         run: |
           flutter pub global activate melos ${{ env.melos_version }}
       - name: "Bootstrap Workspace"
-        run: melos bootstrap
+        run: melos bootstrap --verbose
       - name: "Dart Analyze"
         run: |
           melos run analyze
@@ -45,6 +46,7 @@ jobs:
 
   format:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     timeout-minutes: 15
     steps:
       - name: "Git Checkout"
@@ -73,6 +75,7 @@ jobs:
 
   test:
     runs-on: macos-latest
+    if: github.event.pull_request.draft == false
     timeout-minutes: 20
     steps:
       - name: "Git Checkout"
@@ -123,3 +126,12 @@ jobs:
         with:
           path: packages/stream_chat_flutter/coverage/lcov.info
           min_coverage: 67
+
+  draft-build:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == true
+    timeout-minutes: 1
+
+    steps:
+      - name: Run a one-line script
+        run: echo Draft PR, you are good.

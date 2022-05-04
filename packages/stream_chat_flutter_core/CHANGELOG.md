@@ -1,8 +1,53 @@
-## Upcoming
+## 4.0.1
+
+- Minor fixes
+- Updated `stream_chat` dependency to [`4.0.1`](https://pub.dev/packages/stream_chat/changelog).
+
+## 4.0.0
+
+For upgrading to V4, please refer to the [V4 Migration Guide](https://getstream.io/chat/docs/sdk/flutter/guides/migration_guide_4_0/)
+
+- Deprecated `UsersBloc` in favor of `StreamUserListController` to control the user list.
+- Deprecated `MessageSearchBloc` in favor of `StreamMessageSearchListController` to control the user list.
+
+## 4.0.0-beta.2
+
+- Updated `stream_chat` dependency to [`4.0.0-beta.2`](https://pub.dev/packages/stream_chat/changelog).
+
+## 4.0.0-beta.0
+
+✅ Added
+
+- Added `MessageInputController` to hold `Message` related data.
+- Deprecated old widgets in favor of Stream-prefixed ones.
+- Deprecated `ChannelsBloc` in favor of `StreamChannelListController` to control the channel list.
+- Added `MessageTextFieldController` to be used with the new `StreamTextField` ui widget.
+
+- Updated `stream_chat` dependency to [`4.0.0-beta.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 3.6.1
+
+- Updated `stream_chat` dependency to [`3.6.1`](https://pub.dev/packages/stream_chat/changelog).
+
+## 3.6.0
+
+- Updated `stream_chat` dependency to [`3.6.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 3.5.1
+
+- Updated `stream_chat` dependency to [`3.5.1`](https://pub.dev/packages/stream_chat/changelog).
+
+## 3.5.0
+
+- Updated `stream_chat` dependency to [`3.5.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 3.4.0
+- Updated `stream_chat` dependency to [`3.4.0`](https://pub.dev/packages/stream_chat/changelog).
 
 🐞 Fixed
 
 - Do not move a channel to top if the new message is from a thread.
+- [[#848]](https://github.com/GetStream/stream-chat-flutter/issues/848) Fixed "Bad state: Cannot add new events after calling close" by replacing all `.add` methods with a new `.safeAdd`.
 
 ## 3.3.1
 

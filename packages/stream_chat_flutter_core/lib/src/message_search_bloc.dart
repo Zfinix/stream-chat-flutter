@@ -1,7 +1,10 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:stream_chat/stream_chat.dart';
 import 'package:stream_chat_flutter_core/src/stream_chat_core.dart';
+import 'package:stream_chat_flutter_core/src/stream_controller_extension.dart';
 
 /// [MessageSearchBloc] is used to manage a list of messages with pagination.
 /// This class can be used to load messages, perform queries, etc.
@@ -10,6 +13,7 @@ import 'package:stream_chat_flutter_core/src/stream_chat_core.dart';
 /// using Flutter's [BuildContext].
 ///
 /// API docs: https://getstream.io/chat/docs/flutter-dart/send_message/
+@Deprecated("Use 'StreamMessageSearchListController' instead")
 class MessageSearchBloc extends StatefulWidget {
   /// Instantiate a new MessageSearchBloc
   const MessageSearchBloc({
@@ -95,7 +99,7 @@ class MessageSearchBlocState extends State<MessageSearchBloc>
     }
 
     if (_messageResponses.hasValue) {
-      _queryMessagesLoadingController.add(true);
+      _queryMessagesLoadingController.safeAdd(true);
     }
     try {
       final oldMessages = List<GetMessageResponse>.from(messageResponses ?? []);
@@ -120,24 +124,24 @@ class MessageSearchBlocState extends State<MessageSearchBloc>
 
       final newMessages = response.results;
       if (clear) {
-        _messageResponses.add(newMessages);
+        _messageResponses.safeAdd(newMessages);
       } else {
         final temp = oldMessages + newMessages;
-        _messageResponses.add(temp);
+        _messageResponses.safeAdd(temp);
       }
       if (_messageResponses.hasValue && _queryMessagesLoadingController.value) {
-        _queryMessagesLoadingController.add(false);
+        _queryMessagesLoadingController.safeAdd(false);
       }
       if (newMessages.isEmpty || newMessages.length < pagination.limit) {
         _paginationEnded = true;
       }
     } catch (e, stk) {
       // reset loading controller
-      _queryMessagesLoadingController.add(false);
+      _queryMessagesLoadingController.safeAdd(false);
       if (_messageResponses.hasValue) {
-        _queryMessagesLoadingController.addError(e, stk);
+        _queryMessagesLoadingController.safeAddError(e, stk);
       } else {
-        _messageResponses.addError(e, stk);
+        _messageResponses.safeAddError(e, stk);
       }
     }
   }

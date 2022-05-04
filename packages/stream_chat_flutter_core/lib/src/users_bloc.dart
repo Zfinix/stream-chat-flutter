@@ -1,5 +1,8 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:stream_chat_flutter_core/src/stream_controller_extension.dart';
 import 'package:stream_chat_flutter_core/stream_chat_flutter_core.dart';
 
 /// Widget dedicated to the management of a users list with pagination.
@@ -8,6 +11,7 @@ import 'package:stream_chat_flutter_core/stream_chat_flutter_core.dart';
 /// using Flutter's [BuildContext].
 ///
 /// API docs: https://getstream.io/chat/docs/flutter-dart/init_and_users/
+@Deprecated("Use 'StreamUserListController' instead")
 class UsersBloc extends StatefulWidget {
   /// Instantiate a new [UsersBloc]. The parameter [child] must be supplied and
   /// not null.
@@ -80,7 +84,7 @@ class UsersBlocState extends State<UsersBloc>
     }
 
     if (_usersController.hasValue) {
-      _queryUsersLoadingController.add(true);
+      _queryUsersLoadingController.safeAdd(true);
     }
 
     try {
@@ -95,24 +99,24 @@ class UsersBlocState extends State<UsersBloc>
 
       final newUsers = usersResponse.users;
       if (clear) {
-        _usersController.add(usersResponse.users);
+        _usersController.safeAdd(usersResponse.users);
       } else {
         final temp = oldUsers + usersResponse.users;
-        _usersController.add(temp);
+        _usersController.safeAdd(temp);
       }
       if (_usersController.hasValue && _queryUsersLoadingController.value) {
-        _queryUsersLoadingController.add(false);
+        _queryUsersLoadingController.safeAdd(false);
       }
       if (newUsers.isEmpty || newUsers.length < pagination.limit) {
         _paginationEnded = true;
       }
     } catch (e, stk) {
       // reset loading controller
-      _queryUsersLoadingController.add(false);
+      _queryUsersLoadingController.safeAdd(false);
       if (_usersController.hasValue) {
-        _queryUsersLoadingController.addError(e, stk);
+        _queryUsersLoadingController.safeAddError(e, stk);
       } else {
-        _usersController.addError(e, stk);
+        _usersController.safeAddError(e, stk);
       }
     }
   }

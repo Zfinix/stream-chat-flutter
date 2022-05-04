@@ -1,13 +1,117 @@
-## Upcoming
+## 4.0.1
+
+- Minor fixes
+
+## 4.0.0
+
+For upgrading to V4, please refer to the [V4 Migration Guide](https://getstream.io/chat/docs/sdk/flutter/guides/migration_guide_4_0/)
+
+✅ Added
+
+- Added `push_provider_name` to `addDevice` API call
+
+## 4.0.0-beta.2
+
+🐞 Fixed
+
+- Fixed reactions not working for threads in offline mode.
+- [[#1046]](https://github.com/GetStream/stream-chat-flutter/issues/1046) After `/mute` command on reload cannot access
+  any channel.
+- [[#1047]](https://github.com/GetStream/stream-chat-flutter/issues/1047) `own_capabilities` extraData missing after
+  channel update.
+- [[#1054]](https://github.com/GetStream/stream-chat-flutter/issues/1054) Fix `Unsupported operation: Cannot remove from an unmodifiable list`.
+- [[#1033]](https://github.com/GetStream/stream-chat-flutter/issues/1033) Hard delete from dashboard does not delete message from client.
+- Send only `user_id` while reconnecting.
+
+✅ Added
+
+- Handle `event.message` in `channel.truncate` events
+- Added additional parameters to `channel.truncate`
+
+## 4.0.0-beta.0
+
+✅ Added
+
+- Added support for ownCapabilities.
+
+🐞 Fixed
+
+- Minor fixes and improvements.
+
+## 3.6.1
+
+🐞 Fixed
+
+- [[#1081]](https://github.com/GetStream/stream-chat-flutter/issues/1081) Fixed a bug with user reconnection.
+
+## 3.6.0
+
+🐞 Fixed
+
+- Fixed reactions not working for threads in offline mode.
+- [[#1046]](https://github.com/GetStream/stream-chat-flutter/issues/1046) After `/mute` command on reload cannot access
+  any channel.
+- [[#1047]](https://github.com/GetStream/stream-chat-flutter/issues/1047) `own_capabilities` extraData missing after
+  channel update.
+- [[#1054]](https://github.com/GetStream/stream-chat-flutter/issues/1054) Fix `Unsupported operation: Cannot remove from an unmodifiable list`.
+- [[#1033]](https://github.com/GetStream/stream-chat-flutter/issues/1033) Hard delete from dashboard does not delete message from client.
+- Send only `user_id` while reconnecting.
+
+✅ Added
+
+- Handle `event.message` in `channel.truncate` events
+- Added additional parameters to `channel.truncate`
+
+## 3.5.1
+
+🐞 Fixed
+
+- `channel.unreadCount` was being set as using global unread count on a very specific case.
+- The reconnection logic for the WebSocket connection is now more robust.
+
+## 3.5.0
+
+✅ Added
+
+- You can now pass `score` to `client.sendReaction` and `channel.sendReaction` functions.
+- Added new `client.partialUpdateUsers` function in order to partially update users.
+
+🐞 Fixed
+
+- [[#890]](https://github.com/GetStream/stream-chat-flutter/pull/890) Fixed Reactions not updating on thread messages.
+  Thanks [bstolinski](https://github.com/bstolinski).
+- [[#897]](https://github.com/GetStream/stream-chat-flutter/issues/897) Fixed error type mis-match in `AuthInterceptor`.
+- [[#891]](https://github.com/GetStream/stream-chat-flutter/pull/891) Fixed reply counter for parent message not
+  updating correctly after deleting thread message.
+- Fix `channelState.copyWith` with respect to pinnedMessages.
+
+## 3.4.0
+
+🐞 Fixed
+
+- [[#857]](https://github.com/GetStream/stream-chat-flutter/issues/857) Channel now listens for member ban/unban and
+  updates the channel state with the latest data.
+- [[#748]](https://github.com/GetStream/stream-chat-flutter/issues/748) `Message.user` is now also included while saving
+  users in persistence.
+- [[#871]](https://github.com/GetStream/stream-chat-flutter/issues/871) Fixed thread message deletion.
+- [[#846]](https://github.com/GetStream/stream-chat-flutter/issues/846) Fixed `message.ownReactions` getting truncated
+  when receiving a reaction event.
+- Add check for invalid image URLs
+- Fix `channelState.pinnedMessagesStream` getting reset to `0` after a channel update.
+- Fixed `unreadCount` after removing user from a channel.
 
 🔄 Changed
 
-- `client.location` is now deprecated in favor of the new [edge server](https://getstream.io/blog/chat-edge-infrastructure) and will be removed in v4.0.0.
+- `client.location` is now deprecated in favor of the
+  new [edge server](https://getstream.io/blog/chat-edge-infrastructure) and will be removed in v4.0.0.
+- `channel.banUser`, `channel.unbanUser` is now deprecated in favor of the new `channel.banMember`
+  and `channel.unbanMember`. These deprecated methods will be removed in v4.0.0.
+- Added `banExpires` property of type `DateTime` on the `Member`, `OwnUser`, and `User` models.
 
 ✅ Added
 
 - Added `client.enrichUrl` endpoint for enriching URLs with metadata.
-- Fixed `unreadCount` after removing user from a channel.
+- Added `client.queryBannedUsers`, `channel.queryBannedUsers` endpoint for querying banned users.
 
 ## 3.3.1
 
@@ -30,6 +134,12 @@
 - Fixed local unread count indicator increasing for thread replies.
 - Fixed user presence indicator not updating correctly.
 - `ChannelEvent.membersCount` defaults to 0 avoiding parsing errors due to missing `members_count` field.
+
+## 3.2.1
+
+🐞 Fixed
+
+- Fixed `StreamChatClient.markAllRead` api call
 
 ## 3.2.0
 

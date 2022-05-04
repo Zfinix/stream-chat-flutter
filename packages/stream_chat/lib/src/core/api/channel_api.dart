@@ -84,7 +84,10 @@ class ChannelApi {
 
   /// Mark all channels for this user as read
   Future<EmptyResponse> markAllRead() async {
-    final response = await _client.post('/channels/read');
+    final response = await _client.post(
+      '/channels/read',
+      data: {},
+    );
     return EmptyResponse.fromJson(response.data);
   }
 
@@ -262,10 +265,18 @@ class ChannelApi {
   /// Removes all messages from the channel
   Future<EmptyResponse> truncateChannel(
     String channelId,
-    String channelType,
-  ) async {
+    String channelType, {
+    Message? message,
+    bool? skipPush,
+    DateTime? truncatedAt,
+  }) async {
     final response = await _client.post(
       '${_getChannelUrl(channelId, channelType)}/truncate',
+      data: {
+        if (message != null) 'message': message,
+        if (skipPush != null) 'skip_push': skipPush,
+        if (truncatedAt != null) 'truncated_at': truncatedAt,
+      },
     );
     return EmptyResponse.fromJson(response.data);
   }
