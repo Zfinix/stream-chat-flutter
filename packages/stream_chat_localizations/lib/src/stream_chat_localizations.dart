@@ -77,7 +77,6 @@ GlobalStreamChatLocalizations? getStreamChatTranslation(Locale locale) {
     default:
       return null;
   }
-  return null;
 }
 
 /// Implementation of localized strings for the stream chat widgets
