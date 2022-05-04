@@ -106,7 +106,7 @@ class ChannelListPage extends StatelessWidget {
               [StreamChat.of(context).currentUser!.id],
             ),
             sort: const [SortOption('last_message_at')],
-            limit: 20,
+            messageLimit: 20,
           ),
         ),
       );

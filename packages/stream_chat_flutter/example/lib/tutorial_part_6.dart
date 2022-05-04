@@ -65,10 +65,6 @@ class MyApp extends StatelessWidget {
       ),
       messageListViewTheme: const MessageListViewThemeData(
         backgroundColor: Colors.grey,
-        backgroundImage: DecorationImage(
-          image: AssetImage('assets/background_doodle.png'),
-          fit: BoxFit.cover,
-        ),
       ),
       otherMessageTheme: MessageThemeData(
         messageBackgroundColor: colorTheme.textHighEmphasis,
@@ -109,7 +105,7 @@ class ChannelListPage extends StatelessWidget {
             [StreamChat.of(context).currentUser!.id],
           ),
           sort: const [SortOption('last_message_at')],
-          limit: 20,
+          messageLimit: 20,
           channelWidget: const ChannelPage(),
         ),
       ),

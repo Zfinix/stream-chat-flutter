@@ -1,7 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:stream_chat/src/core/models/device.dart';
-import 'package:stream_chat/src/core/models/mute.dart';
-import 'package:stream_chat/src/core/models/user.dart';
 import 'package:stream_chat/src/core/util/serializer.dart';
 import 'package:stream_chat/stream_chat.dart';
 

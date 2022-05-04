@@ -70,6 +70,7 @@ GlobalStreamChatLocalizations? getStreamChatTranslation(Locale locale) {
     case 'ko':
       return const StreamChatLocalizationsKo();
   }
+  return null;
 }
 
 /// Implementation of localized strings for the stream chat widgets
