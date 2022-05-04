@@ -138,7 +138,9 @@ class ImageAttachment extends AttachmentWidget {
                                 return StreamChannel(
                                   channel: channel,
                                   child: FullScreenMedia(
-                                    mediaAttachments: [attachment],
+                                    mediaAttachments: message.attachments,
+                                    startIndex:
+                                        message.attachments.indexOf(attachment),
                                     userName: message.user?.name,
                                     message: message,
                                     onShowMessage: onShowMessage,
