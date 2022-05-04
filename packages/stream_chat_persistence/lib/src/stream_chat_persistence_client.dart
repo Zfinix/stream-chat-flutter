@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:logging/logging.dart';
 import 'package:mutex/mutex.dart';
 import 'package:stream_chat/stream_chat.dart';
 
