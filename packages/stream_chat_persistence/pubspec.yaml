@@ -18,7 +18,7 @@ dependencies:
   mutex: ^3.0.0
   path: ^1.8.0
   path_provider: ^2.0.1
-  sqlite3_flutter_libs: ^0.5.0
+  sqlite3_flutter_libs: ^0.5.6
   stream_chat: ^3.0.0
 
 dev_dependencies:
