@@ -59,7 +59,7 @@ class StreamChannelHeader extends StatelessWidget
     implements PreferredSizeWidget {
   /// Creates a channel header
   const StreamChannelHeader({
-    Key? key,
+    super.key,
     this.showBackButton = true,
     this.onBackPressed,
     this.onTitleTap,
@@ -73,8 +73,7 @@ class StreamChannelHeader extends StatelessWidget
     this.actions,
     this.backgroundColor,
     this.elevation = 1,
-  })  : preferredSize = const Size.fromHeight(kToolbarHeight),
-        super(key: key);
+  }) : preferredSize = const Size.fromHeight(kToolbarHeight);
 
   /// True if this header shows the leading back button
   final bool showBackButton;

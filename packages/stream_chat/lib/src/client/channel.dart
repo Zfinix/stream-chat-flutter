@@ -171,6 +171,18 @@ class Channel {
     return state!.channelStateStream.map((cs) => cs.channel?.config);
   }
 
+  /// Relationship of the current user to this channel.
+  Member? get membership {
+    _checkInitialized();
+    return state!._channelState.membership;
+  }
+
+  /// Relationship of the current user to this channel as a stream.
+  Stream<Member?> get membershipStream {
+    _checkInitialized();
+    return state!.channelStateStream.map((cs) => cs.membership);
+  }
+
   /// Channel user creator.
   User? get createdBy {
     _checkInitialized();
@@ -193,6 +205,42 @@ class Channel {
   Stream<bool> get frozenStream {
     _checkInitialized();
     return state!.channelStateStream.map((cs) => cs.channel?.frozen == true);
+  }
+
+  /// Channel disabled status.
+  bool get disabled {
+    _checkInitialized();
+    return state!._channelState.channel?.disabled == true;
+  }
+
+  /// Channel disabled status as a stream.
+  Stream<bool> get disabledStream {
+    _checkInitialized();
+    return state!.channelStateStream.map((cs) => cs.channel?.disabled == true);
+  }
+
+  /// Channel hidden status.
+  bool get hidden {
+    _checkInitialized();
+    return state!._channelState.channel?.hidden == true;
+  }
+
+  /// Channel hidden status as a stream.
+  Stream<bool> get hiddenStream {
+    _checkInitialized();
+    return state!.channelStateStream.map((cs) => cs.channel?.hidden == true);
+  }
+
+  /// The last date at which the channel got truncated.
+  DateTime? get truncatedAt {
+    _checkInitialized();
+    return state!._channelState.channel?.truncatedAt;
+  }
+
+  /// The last date at which the channel got truncated as a stream.
+  Stream<DateTime?> get truncatedAtStream {
+    _checkInitialized();
+    return state!.channelStateStream.map((cs) => cs.channel?.truncatedAt);
   }
 
   /// Cooldown count
@@ -448,12 +496,14 @@ class Channel {
           it.file!,
           onSendProgress: onSendProgress,
           cancelToken: cancelToken,
+          extraData: it.extraData,
         ).then((it) => it.file);
       } else {
         future = sendFile(
           it.file!,
           onSendProgress: onSendProgress,
           cancelToken: cancelToken,
+          extraData: it.extraData,
         ).then((it) => it.file);
       }
       _cancelableAttachmentUploadRequest[it.id] = cancelToken;
@@ -757,6 +807,7 @@ class Channel {
     AttachmentFile file, {
     ProgressCallback? onSendProgress,
     CancelToken? cancelToken,
+    Map<String, Object?>? extraData,
   }) {
     _checkInitialized();
     return _client.sendFile(
@@ -765,6 +816,7 @@ class Channel {
       type,
       onSendProgress: onSendProgress,
       cancelToken: cancelToken,
+      extraData: extraData,
     );
   }
 
@@ -773,6 +825,7 @@ class Channel {
     AttachmentFile file, {
     ProgressCallback? onSendProgress,
     CancelToken? cancelToken,
+    Map<String, Object?>? extraData,
   }) {
     _checkInitialized();
     return _client.sendImage(
@@ -781,6 +834,7 @@ class Channel {
       type,
       onSendProgress: onSendProgress,
       cancelToken: cancelToken,
+      extraData: extraData,
     );
   }
 
@@ -805,6 +859,7 @@ class Channel {
   Future<EmptyResponse> deleteFile(
     String url, {
     CancelToken? cancelToken,
+    Map<String, Object?>? extraData,
   }) {
     _checkInitialized();
     return _client.deleteFile(
@@ -812,6 +867,7 @@ class Channel {
       id!,
       type,
       cancelToken: cancelToken,
+      extraData: extraData,
     );
   }
 
@@ -819,6 +875,7 @@ class Channel {
   Future<EmptyResponse> deleteImage(
     String url, {
     CancelToken? cancelToken,
+    Map<String, Object?>? extraData,
   }) {
     _checkInitialized();
     return _client.deleteImage(
@@ -826,6 +883,7 @@ class Channel {
       id!,
       type,
       cancelToken: cancelToken,
+      extraData: extraData,
     );
   }
 
@@ -1530,6 +1588,8 @@ class ChannelClientState {
 
     _listenMemberRemoved();
 
+    _listenMemberUpdated();
+
     _listenMemberBanned();
 
     _listenMemberUnbanned();
@@ -1617,6 +1677,18 @@ class ChannelClientState {
             .toList(growable: false),
         read: existingRead
             .where((r) => r.user.id != user!.id)
+            .toList(growable: false),
+      ));
+    }));
+  }
+
+  void _listenMemberUpdated() {
+    _subscriptions.add(_channel.on(EventType.memberUpdated).listen((Event e) {
+      final member = e.member;
+      final existingMembers = channelState.members ?? [];
+      updateChannelState(channelState.copyWith(
+        members: existingMembers
+            .map((m) => m.userId == member!.userId ? member : m)
             .toList(growable: false),
       ));
     }));
@@ -2007,7 +2079,11 @@ class ChannelClientState {
       );
 
   /// User role for the current user.
+  @Deprecated('Please use currentUserChannelRole')
   String? get currentUserRole => currentUserMember?.role;
+
+  /// Channel role for the current user
+  String? get currentUserChannelRole => currentUserMember?.channelRole;
 
   /// Channel read list.
   List<Read> get read => _channelState.read ?? <Read>[];
@@ -2159,7 +2235,7 @@ class ChannelClientState {
 
   /// The channel threads related to this channel.
   Map<String, List<Message>> get threads =>
-      _threadsController.value.map((key, value) => MapEntry(key, value));
+      _threadsController.value.map(MapEntry.new);
 
   /// The channel threads related to this channel as a stream.
   Stream<Map<String, List<Message>>> get threadsStream =>

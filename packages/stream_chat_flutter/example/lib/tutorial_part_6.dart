@@ -48,9 +48,9 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({
-    Key? key,
+    super.key,
     required this.client,
-  }) : super(key: key);
+  });
 
   final StreamChatClient client;
 
@@ -97,8 +97,8 @@ class MyApp extends StatelessWidget {
 
 class ChannelListPage extends StatefulWidget {
   const ChannelListPage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<ChannelListPage> createState() => _ChannelListPageState();
@@ -141,8 +141,8 @@ class _ChannelListPageState extends State<ChannelListPage> {
 
 class ChannelPage extends StatelessWidget {
   const ChannelPage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -164,9 +164,9 @@ class ChannelPage extends StatelessWidget {
 
 class ThreadPage extends StatelessWidget {
   const ThreadPage({
-    Key? key,
+    super.key,
     this.parent,
-  }) : super(key: key);
+  });
 
   final Message? parent;
 

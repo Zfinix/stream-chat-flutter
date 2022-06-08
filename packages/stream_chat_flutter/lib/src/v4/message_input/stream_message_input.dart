@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'dart:async';
 import 'dart:math';
 
@@ -68,7 +70,7 @@ typedef UserMentionTileBuilder = Widget Function(
 /// Widget builder for action button.
 ///
 /// [defaultActionButton] is the default [IconButton] configuration,
-/// use [defaultActionButton.copyWith] to easily customize it.
+/// use .copyWith to easily customize it.
 typedef ActionButtonBuilder = Widget Function(
   BuildContext context,
   IconButton defaultActionButton,
@@ -173,7 +175,7 @@ const _kDefaultMaxAttachmentSize = 20971520; // 20MB in Bytes
 class StreamMessageInput extends StatefulWidget {
   /// Instantiate a new MessageInput
   const StreamMessageInput({
-    Key? key,
+    super.key,
     this.onMessageSent,
     this.preMessageSending,
     this.maxHeight = 150,
@@ -207,9 +209,12 @@ class StreamMessageInput extends StatefulWidget {
     this.enableSafeArea,
     this.elevation,
     this.shadow,
-    this.autoCorrect,
-    this.disableEmojiSuggestionsOverlay,
-  }) : super(key: key);
+    this.autoCorrect = true,
+    @Deprecated('Please use enableEmojiSuggestionsOverlay')
+        this.disableEmojiSuggestionsOverlay = false,
+    this.enableEmojiSuggestionsOverlay = true,
+    this.enableMentionsOverlay = true,
+  });
 
   /// List of options for showing overlays.
   final List<OverlayOptions> customOverlays;
@@ -327,11 +332,20 @@ class StreamMessageInput extends StatefulWidget {
 
   /// Disable autoCorrect by passing false
   /// autoCorrect is enabled by default
-  final bool? autoCorrect;
+  final bool autoCorrect;
 
   /// Disable the default emoji suggestions
   /// Enabled by default
-  final bool? disableEmojiSuggestionsOverlay;
+  @Deprecated('Please use enableEmojiSuggestionsOverlay')
+  final bool disableEmojiSuggestionsOverlay;
+
+  /// Disable the default emoji suggestions by passing `false`
+  /// Enabled by default
+  final bool enableEmojiSuggestionsOverlay;
+
+  /// Disable the mentions overlay by passing false
+  /// Enabled by default
+  final bool enableMentionsOverlay;
 
   static bool _defaultValidator(Message message) =>
       message.text?.isNotEmpty == true || message.attachments.isNotEmpty;
@@ -363,11 +377,6 @@ class StreamMessageInputState extends State<StreamMessageInput>
 
   bool get _isEditing =>
       _effectiveController.value.status != MessageSendingStatus.sending;
-
-  bool get _autoCorrect => widget.autoCorrect ?? true;
-
-  bool get _disableEmojiSuggestionsOverlay =>
-      widget.disableEmojiSuggestionsOverlay ?? false;
 
   StreamRestorableMessageInputController? _controller;
 
@@ -598,7 +607,8 @@ class StreamMessageInputState extends State<StreamMessageInput>
               visible: _showCommandsOverlay,
               widget: _buildCommandsOverlayEntry(),
             ),
-            if (!_disableEmojiSuggestionsOverlay)
+            if (widget.enableEmojiSuggestionsOverlay &&
+                !widget.disableEmojiSuggestionsOverlay)
               OverlayOptions(
                 visible: _focusNode.hasFocus &&
                     _effectiveController.text.isNotEmpty &&
@@ -611,10 +621,11 @@ class StreamMessageInputState extends State<StreamMessageInput>
                         .contains(':'),
                 widget: _buildEmojiOverlay(),
               ),
-            OverlayOptions(
-              visible: _showMentionsOverlay,
-              widget: _buildMentionsOverlayEntry(),
-            ),
+            if (widget.enableMentionsOverlay)
+              OverlayOptions(
+                visible: _showMentionsOverlay,
+                widget: _buildMentionsOverlayEntry(),
+              ),
             ...widget.customOverlays,
           ],
           child: child,
@@ -736,7 +747,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
               color: _messageInputTheme.expandButtonColor,
             ),
           ),
-          padding: const EdgeInsets.all(0),
+          padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(
             height: 24,
             width: 24,
@@ -813,7 +824,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
                     textAlignVertical: TextAlignVertical.center,
                     decoration: _getInputDecoration(context),
                     textCapitalization: TextCapitalization.sentences,
-                    autocorrect: _autoCorrect,
+                    autocorrect: widget.autoCorrect,
                   ),
                 ),
               ],
@@ -908,7 +919,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
               child: IconButton(
                 icon: StreamSvgIcon.closeSmall(),
                 splashRadius: 24,
-                padding: const EdgeInsets.all(0),
+                padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   height: 24,
                   width: 24,
@@ -1394,9 +1405,9 @@ class StreamMessageInputState extends State<StreamMessageInput>
           ],
         );
       default:
-        return Container(
+        return const ColoredBox(
           color: Colors.black26,
-          child: const Icon(Icons.insert_drive_file),
+          child: Icon(Icons.insert_drive_file),
         );
     }
   }
@@ -1411,7 +1422,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
                 ? _messageInputTheme.actionButtonColor
                 : _messageInputTheme.actionButtonIdleColor),
       ),
-      padding: const EdgeInsets.all(0),
+      padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(
         height: 24,
         width: 24,
@@ -1440,7 +1451,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
             ? _messageInputTheme.actionButtonColor
             : _messageInputTheme.actionButtonIdleColor,
       ),
-      padding: const EdgeInsets.all(0),
+      padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(
         height: 24,
         width: 24,
@@ -1801,10 +1812,10 @@ class StreamMessageInputState extends State<StreamMessageInput>
 class OGAttachmentPreview extends StatelessWidget {
   /// Returns a new instance of [OGAttachmentPreview]
   const OGAttachmentPreview({
-    Key? key,
+    super.key,
     required this.attachment,
     this.onDismissPreviewPressed,
-  }) : super(key: key);
+  });
 
   /// The attachment to be rendered.
   final Attachment attachment;
