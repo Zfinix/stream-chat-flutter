@@ -1,3 +1,16 @@
+## 4.4.0
+
+- Allowed experimental use of indexedDb on web with `webUseExperimentalIndexedDb` parameter on `StreamChatPersistenceClient`.
+  Thanks [geweald](https://github.com/geweald).
+
+## 4.3.0
+
+- Updated `stream_chat` dependency to [`4.4.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 4.2.0
+
+- Added support for `Channel.ownCapabilities`
+
 ## 4.1.0
 
 🔄 Changed

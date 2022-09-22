@@ -1,17 +1,15 @@
 library stream_chat;
 
 export 'package:async/async.dart';
+export 'package:dio/src/cancel_token.dart';
 export 'package:dio/src/dio_error.dart';
 export 'package:dio/src/multipart_file.dart';
 export 'package:dio/src/options.dart';
-export 'package:dio/src/options.dart' show ProgressCallback;
 export 'package:logging/logging.dart' show Logger, Level, LogRecord;
 export 'package:rate_limiter/rate_limiter.dart';
 export 'package:uuid/uuid.dart';
 
-export './src/core/api/attachment_file_uploader.dart'
-    show AttachmentFileUploader;
-export './src/core/api/requests.dart';
+export './src/core/api/attachment_file_uploader.dart';
 export './src/core/api/requests.dart';
 export './src/core/api/responses.dart';
 export './src/core/api/stream_chat_api.dart' show PushProvider;
@@ -40,11 +38,11 @@ export './src/permission_type.dart';
 export './src/ws/connection_status.dart';
 export 'src/client/channel.dart';
 export 'src/client/client.dart';
+export 'src/client/key_stroke_handler.dart';
 export 'src/core/api/attachment_file_uploader.dart' show AttachmentFileUploader;
 export 'src/core/api/requests.dart';
-export 'src/core/api/requests.dart';
 export 'src/core/api/responses.dart';
-export 'src/core/api/stream_chat_api.dart' show PushProvider;
+export 'src/core/api/stream_chat_api.dart';
 export 'src/core/error/error.dart';
 export 'src/core/models/action.dart';
 export 'src/core/models/attachment.dart';

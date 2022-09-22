@@ -1,4 +1,6 @@
 export 'package:jiffy/jiffy.dart';
+export 'package:photo_manager/photo_manager.dart'
+    show ThumbnailSize, ThumbnailFormat;
 export 'package:stream_chat_flutter_core/stream_chat_flutter_core.dart';
 
 export 'src/attachment/attachment.dart';
@@ -22,6 +24,7 @@ export 'src/info_tile.dart';
 export 'src/localization/stream_chat_localizations.dart';
 export 'src/localization/translations.dart' show DefaultTranslations;
 export 'src/message_action.dart';
+
 // ignore: deprecated_member_use_from_same_package
 export 'src/message_input.dart' show MessageInput, MessageInputState;
 export 'src/message_list_view.dart';
@@ -49,6 +52,7 @@ export 'src/user_item.dart';
 export 'src/user_list_view.dart';
 export 'src/user_mention_tile.dart';
 export 'src/utils.dart';
+
 // v4
 export 'src/v4/message_input/countdown_button.dart';
 export 'src/v4/message_input/stream_attachment_picker.dart';
@@ -65,8 +69,6 @@ export 'src/v4/scroll_view/message_search_scroll_view/stream_message_search_list
 export 'src/v4/scroll_view/stream_scroll_view_empty_widget.dart';
 export 'src/v4/scroll_view/stream_scroll_view_indexed_widget_builder.dart';
 export 'src/v4/scroll_view/user_scroll_view/stream_user_grid_tile.dart';
-export 'src/v4/scroll_view/user_scroll_view/stream_user_grid_tile.dart';
-export 'src/v4/scroll_view/user_scroll_view/stream_user_grid_view.dart';
 export 'src/v4/scroll_view/user_scroll_view/stream_user_grid_view.dart';
 export 'src/v4/scroll_view/user_scroll_view/stream_user_list_tile.dart';
 export 'src/v4/scroll_view/user_scroll_view/stream_user_list_view.dart';

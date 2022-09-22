@@ -1,3 +1,13 @@
+## 3.3.0
+
+* Added support for [Norwegian](https://github.com/GetStream/stream-chat-flutter/blob/master/packages/stream_chat_localizations/lib/src/stream_chat_localizations_no.dart) locale.
+
+## 3.2.0
+
+✅ Added
+
+* Added support for `unreadMessagesSeparatorText` translation.
+
 ## 3.1.0
 
 * Added support for [German](https://github.com/GetStream/stream-chat-flutter/blob/master/packages/stream_chat_localizations/lib/src/stream_chat_localizations_de.dart) locale.

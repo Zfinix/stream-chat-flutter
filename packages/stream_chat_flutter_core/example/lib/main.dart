@@ -38,9 +38,9 @@ class StreamExample extends StatelessWidget {
   /// If you'd prefer using pre-made UI widgets for your app, please see our
   /// other package, `stream_chat_flutter`.
   const StreamExample({
-    Key? key,
+    super.key,
     required this.client,
-  }) : super(key: key);
+  });
 
   /// Instance of Stream Client.
   /// Stream's [StreamChatClient] can be used to connect to our servers and
@@ -67,7 +67,7 @@ class StreamExample extends StatelessWidget {
 class HomeScreen extends StatefulWidget {
   /// Builds a basic layout displaying a list of [Channel]s the user is a
   /// part of.
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -196,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
 /// callbacks for building UIs based on different api results.
 class MessageScreen extends StatefulWidget {
   /// Build a MessageScreen
-  const MessageScreen({Key? key}) : super(key: key);
+  const MessageScreen({super.key});
 
   @override
   _MessageScreenState createState() => _MessageScreenState();

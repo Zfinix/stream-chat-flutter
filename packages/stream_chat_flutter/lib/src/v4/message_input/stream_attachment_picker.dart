@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:stream_chat_flutter/src/extension.dart';
 import 'package:stream_chat_flutter/src/media_list_view.dart';
@@ -32,7 +35,7 @@ class StreamAttachmentPicker extends StatefulWidget {
     this.pickerSize = 360.0,
     this.attachmentLimit = 10,
     this.onAttachmentLimitExceeded,
-    this.maxAttachmentSize = 20971520,
+    this.maxAttachmentSize = kDefaultMaxAttachmentSize,
     this.onError,
     this.allowedAttachmentTypes = const [
       DefaultAttachmentTypes.image,
@@ -40,6 +43,10 @@ class StreamAttachmentPicker extends StatefulWidget {
       DefaultAttachmentTypes.video,
     ],
     this.customAttachmentTypes = const [],
+    this.attachmentThumbnailSize = const ThumbnailSize(400, 400),
+    this.attachmentThumbnailFormat = ThumbnailFormat.jpeg,
+    this.attachmentThumbnailQuality = 100,
+    this.attachmentThumbnailScale = 1,
   });
 
   /// True if the picker is open.
@@ -74,6 +81,25 @@ class StreamAttachmentPicker extends StatefulWidget {
   /// The list of custom attachment types that can be picked.
   final List<CustomAttachmentType> customAttachmentTypes;
 
+  /// Size of the attachment thumbnails.
+  ///
+  /// Defaults to (400, 400).
+  final ThumbnailSize attachmentThumbnailSize;
+
+  /// Format of the attachment thumbnails.
+  ///
+  /// Defaults to [ThumbnailFormat.jpeg].
+  final ThumbnailFormat attachmentThumbnailFormat;
+
+  /// The quality value for the attachment thumbnails.
+  ///
+  /// Valid from 1 to 100.
+  /// Defaults to 100.
+  final int attachmentThumbnailQuality;
+
+  /// The scale to apply on the [attachmentThumbnailSize].
+  final double attachmentThumbnailScale;
+
   /// Used to create a new copy of [StreamAttachmentPicker] with modified
   /// properties.
   StreamAttachmentPicker copyWith({
@@ -88,7 +114,11 @@ class StreamAttachmentPicker extends StatefulWidget {
     ValueChanged<bool>? onChangeInputState,
     ValueChanged<String>? onError,
     List<DefaultAttachmentTypes>? allowedAttachmentTypes,
-    List<CustomAttachmentType>? customAttachmentTypes = const [],
+    List<CustomAttachmentType>? customAttachmentTypes,
+    ThumbnailSize? attachmentThumbnailSize,
+    ThumbnailFormat? attachmentThumbnailFormat,
+    int? attachmentThumbnailQuality,
+    double? attachmentThumbnailScale,
   }) =>
       StreamAttachmentPicker(
         key: key ?? this.key,
@@ -106,6 +136,14 @@ class StreamAttachmentPicker extends StatefulWidget {
             allowedAttachmentTypes ?? this.allowedAttachmentTypes,
         customAttachmentTypes:
             customAttachmentTypes ?? this.customAttachmentTypes,
+        attachmentThumbnailSize:
+            attachmentThumbnailSize ?? this.attachmentThumbnailSize,
+        attachmentThumbnailFormat:
+            attachmentThumbnailFormat ?? this.attachmentThumbnailFormat,
+        attachmentThumbnailQuality:
+            attachmentThumbnailQuality ?? this.attachmentThumbnailQuality,
+        attachmentThumbnailScale:
+            attachmentThumbnailScale ?? this.attachmentThumbnailScale,
       );
 
   @override
@@ -282,25 +320,26 @@ class _StreamAttachmentPickerState extends State<StreamAttachmentPicker> {
                             .iconBuilder(context, _filePickerIndex == i + 1),
                       ),
                     const Spacer(),
-                    FutureBuilder(
-                      future: PhotoManager.requestPermissionExtend(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData &&
-                            snapshot.data == PermissionState.limited) {
-                          return TextButton(
-                            child: Text(context.translations.viewLibrary),
-                            onPressed: () async {
-                              await PhotoManager.presentLimited();
-                              _mediaListViewController.updateMedia(
-                                newValue: true,
-                              );
-                            },
-                          );
-                        }
+                    if (widget.isOpen)
+                      FutureBuilder(
+                        future: PhotoManager.requestPermissionExtend(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData &&
+                              snapshot.data == PermissionState.limited) {
+                            return TextButton(
+                              child: Text(context.translations.viewLibrary),
+                              onPressed: () async {
+                                await PhotoManager.presentLimited();
+                                _mediaListViewController.updateMedia(
+                                  newValue: true,
+                                );
+                              },
+                            );
+                          }
 
-                        return const SizedBox.shrink();
-                      },
-                    ),
+                          return const SizedBox.shrink();
+                        },
+                      ),
                   ],
                 ),
                 DecoratedBox(
@@ -356,6 +395,11 @@ class _StreamAttachmentPickerState extends State<StreamAttachmentPicker> {
                         },
                         allowedAttachmentTypes: widget.allowedAttachmentTypes,
                         customAttachmentTypes: widget.customAttachmentTypes,
+                        mediaThumbnailSize: widget.attachmentThumbnailSize,
+                        mediaThumbnailFormat: widget.attachmentThumbnailFormat,
+                        mediaThumbnailQuality:
+                            widget.attachmentThumbnailQuality,
+                        mediaThumbnailScale: widget.attachmentThumbnailScale,
                       ),
                     ),
                   ),
@@ -368,17 +412,40 @@ class _StreamAttachmentPickerState extends State<StreamAttachmentPicker> {
   }
 
   void _addAssetAttachment(AssetEntity medium) async {
-    final mediaFile = await medium.originFile.timeout(
-      const Duration(seconds: 5),
-      onTimeout: () => medium.originFile,
-    );
-
+    final mediaFile = await medium.originFile;
     if (mediaFile == null) return;
 
+    final tempDir = await getTemporaryDirectory();
+
+    // TODO: Confirm that this max resolution is final
+    // Taken from https://getstream.io/chat/docs/flutter-dart/file_uploads/?language=dart#image-resizing
+    const maxCDNImageResolution = 16800000;
+    final imageResolution = medium.width * medium.height;
+    File? cachedFile;
+    if (imageResolution > maxCDNImageResolution) {
+      final aspect = imageResolution / maxCDNImageResolution;
+      final updatedSize = medium.size / (math.sqrt(aspect));
+      final resizedImage = await medium.thumbnailDataWithSize(
+        ThumbnailSize(
+          updatedSize.width.floor(),
+          updatedSize.height.floor(),
+        ),
+        quality: 70, // TODO: investigate compressing all images
+      );
+      final file =
+          await File('${tempDir.path}/${mediaFile.path.split('/').last}')
+              .create();
+      file.writeAsBytesSync(resizedImage!);
+      cachedFile = file;
+    } else {
+      cachedFile = await mediaFile
+          .copy('${tempDir.path}/${mediaFile.path.split('/').last}');
+    }
+
     final file = AttachmentFile(
-      path: mediaFile.path,
-      size: await mediaFile.length(),
-      bytes: mediaFile.readAsBytesSync(),
+      path: cachedFile.path,
+      size: await cachedFile.length(),
+      bytes: cachedFile.readAsBytesSync(),
     );
 
     if (file.size! > widget.maxAttachmentSize) {
@@ -433,6 +500,10 @@ class _PickerWidget extends StatefulWidget {
     required this.allowedAttachmentTypes,
     required this.customAttachmentTypes,
     required this.mediaListViewController,
+    this.mediaThumbnailSize = const ThumbnailSize(400, 400),
+    this.mediaThumbnailFormat = ThumbnailFormat.jpeg,
+    this.mediaThumbnailQuality = 100,
+    this.mediaThumbnailScale = 1,
   });
 
   final int filePickerIndex;
@@ -444,6 +515,10 @@ class _PickerWidget extends StatefulWidget {
   final List<DefaultAttachmentTypes> allowedAttachmentTypes;
   final List<CustomAttachmentType> customAttachmentTypes;
   final MediaListViewController mediaListViewController;
+  final ThumbnailSize mediaThumbnailSize;
+  final ThumbnailFormat mediaThumbnailFormat;
+  final int mediaThumbnailQuality;
+  final double mediaThumbnailScale;
 
   @override
   _PickerWidgetState createState() => _PickerWidgetState();
@@ -498,6 +573,10 @@ class _PickerWidgetState extends State<_PickerWidget> {
             selectedIds: widget.selectedMedias,
             onSelect: widget.onMediaSelected,
             controller: widget.mediaListViewController,
+            thumbnailSize: widget.mediaThumbnailSize,
+            thumbnailFormat: widget.mediaThumbnailFormat,
+            thumbnailQuality: widget.mediaThumbnailQuality,
+            thumbnailScale: widget.mediaThumbnailScale,
           );
         }
 

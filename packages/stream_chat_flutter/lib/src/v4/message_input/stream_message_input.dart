@@ -128,7 +128,8 @@ enum SendButtonLocation {
 
 const _kMinMediaPickerSize = 360.0;
 
-const _kDefaultMaxAttachmentSize = 20971520; // 20MB in Bytes
+/// Default maximum size for media attachments.
+const kDefaultMaxAttachmentSize = 1024 * 1024 * 100; // 100MB in Bytes
 
 /// Inactive state:
 ///
@@ -193,7 +194,7 @@ class StreamMessageInput extends StatefulWidget {
     this.activeSendButton,
     this.showCommandsButton = true,
     this.userMentionsTileBuilder,
-    this.maxAttachmentSize = _kDefaultMaxAttachmentSize,
+    this.maxAttachmentSize = kDefaultMaxAttachmentSize,
     this.onError,
     this.attachmentLimit = 10,
     this.onAttachmentLimitExceed,
@@ -944,12 +945,14 @@ class StreamMessageInputState extends State<StreamMessageInput>
       value = value.trim();
 
       final channel = StreamChannel.of(context).channel;
-      if (channel.ownCapabilities.contains(PermissionType.sendTypingEvents) &&
-          value.isNotEmpty) {
-        channel
-            .keyStroke(_effectiveController.value.parentId)
-            // ignore: no-empty-block
-            .catchError((e) {});
+      if (value.isNotEmpty &&
+          channel.ownCapabilities.contains(PermissionType.sendTypingEvents)) {
+        // Notify the server that the user started typing.
+        channel.keyStroke(_effectiveController.message.parentId).onError(
+          (error, stackTrace) {
+            widget.onError?.call(error!, stackTrace);
+          },
+        );
       }
 
       var actionsLength = widget.actions.length;
@@ -998,7 +1001,10 @@ class StreamMessageInputState extends State<StreamMessageInput>
     _lastSearchedContainsUrlText = value;
 
     final matchedUrls = _urlRegex.allMatches(value).toList()
-      ..removeWhere((it) => it.group(0)?.split('.').last.isValidTLD() == false);
+      ..removeWhere((it) {
+        final _parsedMatch = Uri.tryParse(it.group(0) ?? '')?.withScheme;
+        return _parsedMatch?.host.split('.').last.isValidTLD() == false;
+      });
 
     // Reset the og attachment if the text doesn't contain any url
     if (matchedUrls.isEmpty ||
@@ -1221,7 +1227,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
 
   void _setCommand(Command c) {
     _effectiveController
-      ..clear()
+      ..reset()
       ..command = c;
     setState(() {
       _showCommandsOverlay = false;

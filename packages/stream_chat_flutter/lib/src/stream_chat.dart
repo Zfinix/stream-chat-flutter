@@ -109,8 +109,8 @@ class StreamChatState extends State<StreamChat> {
                 child: Builder(
                   builder: (context) {
                     StreamChatClient.additionalHeaders = {
-                      'X-Stream-Client':
-                          '${StreamChatClient.defaultUserAgent}-ui',
+                      'X-Stream-Client': '${StreamChatClient.defaultUserAgent}-'
+                          'ui-${StreamChatClient.packageVersion}',
                     };
                     return widget.child ?? const Offstage();
                   },
@@ -140,11 +140,10 @@ class StreamChatState extends State<StreamChat> {
 
   @override
   void didChangeDependencies() {
-    final currentLocale = Localizations.localeOf(context);
-    final languageCode = currentLocale.languageCode;
+    final currentLocale = Localizations.localeOf(context).toString();
     final availableLocales = Jiffy.getAllAvailableLocales();
-    if (availableLocales.contains(languageCode)) {
-      Jiffy.locale(languageCode);
+    if (availableLocales.contains(currentLocale)) {
+      Jiffy.locale(currentLocale);
     }
     super.didChangeDependencies();
   }
