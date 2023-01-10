@@ -82,16 +82,6 @@ class StreamChatClient {
       headers: {'X-Stream-Client': defaultUserAgent},
     );
 
-    // TODO: simplify this once we remove the deprecated field.
-    final AttachmentFileUploaderProvider fileUploaderProvider;
-    if (attachmentFileUploaderProvider != null) {
-      fileUploaderProvider = attachmentFileUploaderProvider;
-    } else if (attachmentFileUploader != null) {
-      fileUploaderProvider = (httpClient) => attachmentFileUploader;
-    } else {
-      fileUploaderProvider = StreamAttachmentFileUploader.new;
-    }
-
     _chatApi = chatApi ??
         StreamChatApi(
           apiKey,
