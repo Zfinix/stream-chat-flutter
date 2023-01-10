@@ -493,36 +493,41 @@ class Channel {
 
       final isImage = it.type == 'image';
       final cancelToken = CancelToken();
-      Future<String> future;
+      Future<SendAttachmentResponse> future;
       if (isImage) {
         future = sendImage(
           it.file!,
           onSendProgress: onSendProgress,
           cancelToken: cancelToken,
           extraData: it.extraData,
-        ).then((it) => it.file);
+        );
       } else {
         future = sendFile(
           it.file!,
           onSendProgress: onSendProgress,
           cancelToken: cancelToken,
           extraData: it.extraData,
-        ).then((it) => it.file);
+        );
       }
       _cancelableAttachmentUploadRequest[it.id] = cancelToken;
-      return future.then((url) {
+      return future.then((response) {
         client.logger.info('Attachment ${it.id} uploaded successfully...');
-        if (isImage) {
+
+        // If the response is SendFileResponse, then we might also be getting
+        // thumbUrl in case of video. So we need to update the attachment with
+        // both the assetUrl and thumbUrl.
+        if (response is SendFileResponse) {
           updateAttachment(
             it.copyWith(
-              imageUrl: url,
+              assetUrl: response.file,
+              thumbUrl: response.thumbUrl,
               uploadState: const UploadState.success(),
             ),
           );
         } else {
           updateAttachment(
             it.copyWith(
-              assetUrl: url,
+              imageUrl: response.file,
               uploadState: const UploadState.success(),
             ),
           );
@@ -1064,9 +1069,9 @@ class Channel {
   /// See, https://getstream.io/chat/docs/other-rest/channel_update/?language=dart
   /// for more information.
   Future<UpdateChannelResponse> update(
-    Map<String, Object?> channelData, [
+    Map<String, Object?> channelData, {
     Message? updateMessage,
-  ]) async {
+  }) async {
     _checkInitialized();
     return _client.updateChannel(
       id!,
@@ -1149,12 +1154,10 @@ class Channel {
 
   /// Add members to the channel.
   Future<AddMembersResponse> addMembers(
-    List<String> memberIds, [
+    List<String> memberIds, {
     Message? message,
-    // TODO: Convert to optional parameters in v5.0.0
-    // ignore: avoid_positional_boolean_parameters
     bool hideHistory = false,
-  ]) async {
+  }) async {
     _checkInitialized();
     return _client.addChannelMembers(
       id!,
@@ -1167,18 +1170,18 @@ class Channel {
 
   /// Invite members to the channel.
   Future<InviteMembersResponse> inviteMembers(
-    List<String> memberIds, [
+    List<String> memberIds, {
     Message? message,
-  ]) async {
+  }) async {
     _checkInitialized();
     return _client.inviteChannelMembers(id!, type, memberIds, message: message);
   }
 
   /// Remove members from the channel.
   Future<RemoveMembersResponse> removeMembers(
-    List<String> memberIds, [
+    List<String> memberIds, {
     Message? message,
-  ]) async {
+  }) async {
     _checkInitialized();
     return _client.removeChannelMembers(id!, type, memberIds, message: message);
   }
@@ -1239,7 +1242,7 @@ class Channel {
     state = ChannelClientState(this, channelState);
 
     if (cid != null) {
-      client.state.channels = {cid!: this};
+      client.state.addChannels({cid!: this});
     }
     if (!_initializedCompleter.isCompleted) {
       _initializedCompleter.complete(true);
@@ -1546,6 +1549,7 @@ class Channel {
 
   /// Call this method to dispose the channel client.
   void dispose() {
+    client.state.removeChannel('$cid');
     state?.dispose();
     _keyStrokeHandler.cancel();
   }
@@ -2085,10 +2089,6 @@ class ChannelClientState {
   Member? get currentUserMember => members.firstWhereOrNull(
         (m) => m.user?.id == _channel.client.state.currentUser?.id,
       );
-
-  /// User role for the current user.
-  @Deprecated('Please use currentUserChannelRole')
-  String? get currentUserRole => currentUserMember?.role;
 
   /// Channel role for the current user
   String? get currentUserChannelRole => currentUserMember?.channelRole;

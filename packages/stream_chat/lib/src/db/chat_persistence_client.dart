@@ -1,4 +1,5 @@
 import 'package:stream_chat/src/core/api/requests.dart';
+import 'package:stream_chat/src/core/models/attachment_file.dart';
 import 'package:stream_chat/src/core/models/channel_model.dart';
 import 'package:stream_chat/src/core/models/channel_state.dart';
 import 'package:stream_chat/src/core/models/event.dart';
@@ -8,6 +9,7 @@ import 'package:stream_chat/src/core/models/message.dart';
 import 'package:stream_chat/src/core/models/reaction.dart';
 import 'package:stream_chat/src/core/models/read.dart';
 import 'package:stream_chat/src/core/models/user.dart';
+import 'package:stream_chat/src/core/platform_detector/platform_detector.dart';
 import 'package:stream_chat/src/core/util/extension.dart';
 
 /// A simple client used for persisting chat data locally.
@@ -92,7 +94,10 @@ abstract class ChatPersistenceClient {
   /// for filtering out states.
   Future<List<ChannelState>> getChannelStates({
     Filter? filter,
-    List<SortOption<ChannelModel>>? sort,
+    @Deprecated('''
+    sort has been deprecated. 
+    Please use channelStateSort instead.''') List<SortOption<ChannelModel>>? sort,
+    List<SortOption<ChannelState>>? channelStateSort,
     PaginationParams? paginationParams,
   });
 
@@ -133,7 +138,7 @@ abstract class ChatPersistenceClient {
   /// Remove a pinned message by message [cids]
   Future<void> deletePinnedMessageByCids(List<String> cids);
 
-  /// Remove a channel by [cid]
+  /// Remove a channel by [channelId]
   Future<void> deleteChannels(List<String> cids);
 
   /// Updates the message data of a particular channel [cid] with
@@ -243,7 +248,15 @@ abstract class ChatPersistenceClient {
         final cid = channel.cid;
         final reads = state.read;
         final members = state.members;
-        final messages = state.messages;
+        final Iterable<Message>? messages;
+        if (CurrentPlatform.isWeb) {
+          messages = state.messages?.where((it) => !it.attachments.any(
+                (attachment) =>
+                    attachment.uploadState != const UploadState.success(),
+              ));
+        } else {
+          messages = state.messages;
+        }
         final pinnedMessages = state.pinnedMessages;
 
         // Preparing deletion data
@@ -255,7 +268,7 @@ abstract class ChatPersistenceClient {
         // preparing addition data
         channelWithReads[cid] = reads;
         channelWithMembers[cid] = members;
-        channelWithMessages[cid] = messages;
+        channelWithMessages[cid] = messages?.toList();
         channelWithPinnedMessages[cid] = pinnedMessages;
 
         reactions.addAll(messages?.expand(_expandReactions) ?? []);

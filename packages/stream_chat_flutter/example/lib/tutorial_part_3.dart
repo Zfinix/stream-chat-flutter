@@ -1,5 +1,4 @@
 // ignore_for_file: public_member_api_docs
-// ignore_for_file: prefer_expression_function_bodies
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
@@ -85,7 +84,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
       'members',
       [StreamChat.of(context).currentUser!.id],
     ),
-    sort: const [SortOption('last_message_at')],
+    channelStateSort: const [SortOption('last_message_at')],
     limit: 20,
   );
 

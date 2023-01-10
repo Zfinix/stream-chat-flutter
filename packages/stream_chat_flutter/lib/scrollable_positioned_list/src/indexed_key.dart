@@ -1,5 +1,3 @@
-import 'dart:ui' show hashValues;
-
 import 'package:flutter/foundation.dart';
 
 /// {@template indexed_key}
@@ -24,7 +22,7 @@ class IndexedKey extends LocalKey {
   }
 
   @override
-  int get hashCode => hashValues(runtimeType, key);
+  int get hashCode => Object.hash(runtimeType, key);
 
   @override
   String toString() => '(IndexedKey) index: $index, key: $key';

@@ -1,8 +1,158 @@
+## 5.2.0
+
+✅ Added
+- Added a new `bottomRowBuilderWithDefaultWidget` parameter to `StreamMessageWidget` which contains a third parameter (default `BottomRow` widget with `copyWith` method available) to allow easier customization.
+
+🔄 Changed
+
+- Updated `lottie` dependency to `^2.0.0`
+- Updated `desktop_drop` dependency to `^0.4.0`
+- Updated `connectivity_plus` dependency to `^3.0.2`
+- Updated `dart_vlc` dependency to `^0.4.0`
+- Updated `file_picker` dependency to `^5.2.4`
+- Deprecated `StreamMessageWidget.bottomRowBuilder` in favor of `StreamMessageWidget.bottomRowBuilderWithDefaultWidget`.
+- Deprecated `StreamMessageWidget.deletedBottomRowBuilder` in favor of `StreamMessageWidget.bottomRowBuilderWithDefaultWidget`.
+- Deprecated `StreamMessageWidget.usernameBuilder` in favor of `StreamMessageWidget.bottomRowBuilderWithDefaultWidget`.
+
+🐞 Fixed
+- [[#1379]](https://github.com/GetStream/stream-chat-flutter/issues/1379) Fixed "Issues with photo attachments on web", where the cached image attachment would not render while uploading.
+- Fix render overflow issue with `MessageSearchListTileTitle`. It now uses `Text.rich` instead of `Row`. Better default behaviour and allows `TextOverflow`.
+- [[1346]](https://github.com/GetStream/stream-chat-flutter/issues/1346) Fixed a render issue while uploading video on web.
+- [[#1347]](https://github.com/GetStream/stream-chat-flutter/issues/1347) `onReply` not working in `AttachmentActionsModal` which is used by `StreamImageAttachment` and `StreamImageGroup`.
+
+## 5.1.0
+
+🐞 Fixed
+
+- Show message custom actions on desktop context menu.
+- Can move cursor by left/right arrow in StreamMessageInput on web/desktop.
+
+✅ Added
+
+- `VideoAttachment` now uses `thumbUrl` to show the thumbnail
+  if it's available instead of generating them.
+- Expose `widthFactor` option in `MessageWidget`
+- Add `enableActionAnimation` flag to `StreamMessageInput`
+
+## 5.0.1
+
+🔄 Changed
+
+- Updated `share_plus` dependency to `^4.5.0`
+
+## 5.0.0
+
+- Included the changes from version [4.5.0](#450).
+
+🐞 Fixed
+
+- [[#1326]](https://github.com/GetStream/stream-chat-flutter/issues/1326) Fixed hitting "enter" on
+  the android keyboard sends the message instead of going to a new line.
+
+✅ Added
+
+- Added `StreamMemberGridView` and `StreamMemberListView`.
+- Added support for additional text field params in `StreamMessageInput`
+    * `maxLines`
+    * `minLines`
+    * `textInputAction`
+    * `keyboardType`
+    * `textCapitalization`
+- Added `showStreamAttachmentPickerModalBottomSheet` to show the attachment picker modal bottom sheet.
+
+🔄 Changed
+
+- Removed Emoji picker from `StreamMessageInput`.
+
+## 5.0.0-beta.2
+
+- Included the changes from version [4.4.0](#440) and [4.4.1](#441).
+
+🐞 Fixed
+
+- Fixed the unread message header in the message list view.
+- Show dialog after clicking on the camera button and permission is denied.
+- Fix Jiffy initialization.
+- Fix loading to unread position in `StreamMessageListView`.
+- Minor fixes and improvements.
+
+🔄 Changed
+
+- [[#1125]](https://github.com/GetStream/stream-chat-flutter/issues/1125) `defaultUserImage`
+  , `placeholderUserImage`, `reactionIcons`, and `enforceUniqueReactions` have been refactored out
+  of `StreamChatThemeData` and into the new `StreamChatConfigurationData` class.
+
+✅ Added
+
+- Added `StreamAutocomplete` widget for autocomplete triggers in `StreamMessageInput`.
+- Added `StreamMessageInput.customAutocompleteTriggers` to allow users to define their custom
+  triggers.
+
+## 5.0.0-beta.1
+
+- 🎉 Initial support for desktop 🖥️ and web 🧑‍💻
+    - Right-click context menus for messages and full-screen attachments
+    - Upload and download attachments using the native desktop file system
+    - Press the "enter" key to send a message
+    - If you are quoting a message and have not yet typed any text, you can press the "esc" key to
+      remove the quoted message.
+    - A dedicated "X" button for removing a quoted message with your mouse
+    - Drag and drop attachment files to `StreamMessageInput`
+        - New `StreamMessageInput.draggingBorder` property to customize the border color of the
+          message input when dropping a file.
+    - Message reactions bubbles
+    - Hovering over a message reaction will show the users that have reacted to the message
+    - Desktop attachment sharing UI
+    - Selectable message text
+    - Gallery navigation controls with keyboard shortcuts (left and right arrow keys)
+    - Appropriate message sizing for large screens
+    - Right-click context menu for `StreamMessageListView` items
+    - `StreamMessageListView` items not swipeable on desktop & web
+    - Video support for Windows & Linux through `dart_vlc`
+    - Video support for macOS through `video_player_macos`
+    - Replace bottom sheets with dialogs where appropriate
+- Other Additions ✅
+    - `onQuotedMessageCleared` to `StreamMessageInput`
+    - `selected` and `selectedTileColor` to `StreamChannelListTile`
+    - `AttachmentUploadStateBuilder.inProgressBuilder` to `AttachmentUploadStateBuilder`
+    - `AttachmentUploadStateBuilder.successBuilder` to `AttachmentUploadStateBuilder`
+    - `AttachmentUploadStateBuilder.failedBuilder` to `AttachmentUploadStateBuilder`
+    - Translations:
+        - `couldNotReadBytesFromFileError`
+        - `downloadLabel`
+        - `toggleMuteUnmuteAction`
+        - `toggleMuteUnmuteGroupQuestion`
+        - `toggleMuteUnmuteGroupText`
+        - `toggleMuteUnmuteUserQuestion`
+        - `toggleMuteUnmuteUserText`
+    - Deprecated `showConfirmationDialog` in favor of `showConfirmationBottomSheet`
+    - Deprecated `showInfoDialog` in favor of `showInfoBottomSheet`
+    - Deprecated `wrapAttachmentWidget` in favor of the `WrapAttachmentWidget` class
+- Breaking changes 🚧
+    - `StreamImageAttachment.size` has been converted from type `Size` to type `BoxConstraints`
+    - `StreamFileAttachment.size` has been converted from type `Size` to type `BoxConstraints`
+    - `StreamGiphyAttachment.size` has been converted from type `Size` to type `BoxConstraints`
+    - `StreamVideoAttachment.size` has been converted from type `Size` to type `BoxConstraints`
+    - `StreamVideoThumbnailImage.width` and `StreamVideoThumbnailImage.height` have been removed in
+      favor of
+      `StreamVideoThumbnailImage.constraints`
+- Dependency updates ⬆️
+    - `chewie: ^1.3.0` -> `chewie: ^1.3.4`
+    - `path_provider: ^2.0.1` -> `path_provider: ^2.0.9`
+    - `video_player: ^2.1.0` -> `video_player: ^2.4.5`
+- Code Improvements 🔧
+    - Extracted many widgets to classes to improve readability, maintainability, and devtools usage.
+    - Organized internal directory structure
+    - Extracted typedefs to their own file
+    - Updated dartdoc documentation
+    - Various code readability improvements
+
 ## 4.6.0
 
 🐞 Fixed
 
-- [[#1323]](https://github.com/GetStream/stream-chat-flutter/issues/1323): Fix message text hiding because of a [flutter bug](https://github.com/flutter/flutter/issues/110628).
+- [[#1323]](https://github.com/GetStream/stream-chat-flutter/issues/1323): Fix message text hiding
+  because of a [flutter bug](https://github.com/flutter/flutter/issues/110628).
 
 ## 4.5.0
 
@@ -437,7 +587,7 @@ typedef ActionButtonBuilder = Widget Function(
 ```
 
 > **_NOTE:_** The last parameter is the default `ActionButton`
-You can call `.copyWith` to customize just a subset of properties.
+> You can call `.copyWith` to customize just a subset of properties.
 
 - Added slow mode which allows a cooldown period after a user sends a message.
 
@@ -540,7 +690,7 @@ typedef MessageBuilder = Widget Function(
 ```
 
 > **_NOTE:_** the last parameter is the default `MessageWidget`
-You can call `.copyWith` to customize just a subset of properties
+> You can call `.copyWith` to customize just a subset of properties
 
 
 ✅ Added
@@ -610,7 +760,7 @@ typedef MessageBuilder = Widget Function(
 ```
 
 > **_NOTE:_** The last parameter is the default `MessageWidget`
-You can call `.copyWith` to customize just a subset of properties.
+> You can call `.copyWith` to customize just a subset of properties.
 
 ✅ Added
 

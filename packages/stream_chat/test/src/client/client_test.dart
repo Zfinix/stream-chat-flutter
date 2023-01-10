@@ -516,6 +516,9 @@ void main() {
     });
 
     setUp(() async {
+      when(() => persistence.updateLastSyncAt(any()))
+          .thenAnswer((_) => Future.value());
+      when(persistence.getLastSyncAt).thenAnswer((_) async => null);
       client = StreamChatClient(apiKey, chatApi: api, ws: ws)
         ..chatPersistenceClient = persistence;
       await client.connectUser(user, token);
@@ -532,9 +535,12 @@ void main() {
       test(
         '''should update persistence connectionInfo and lastSync when sync succeeds''',
         () async {
+          // persistence.updateLastSyncAt might be called
+          // when connecting the user.
+          // Resetting the logs so we start counting invocations correctly.
+          reset(persistence);
           const cids = ['test-cid-1', 'test-cid-2', 'test-cid-3'];
           final lastSyncAt = DateTime.now();
-
           when(() => api.general.sync(cids, lastSyncAt))
               .thenAnswer((_) async => SyncResponse()
                 ..events = [
@@ -567,6 +573,10 @@ void main() {
       test(
         'should work fine if persistence contains sync params',
         () async {
+          // persistence.updateLastSyncAt might be called
+          // when connecting the user.
+          // Resetting the logs so we start counting invocations correctly.
+          reset(persistence);
           const cids = ['test-cid-1', 'test-cid-2', 'test-cid-3'];
           final lastSyncAt = DateTime.now();
 
@@ -618,7 +628,7 @@ void main() {
 
           when(() => persistence.getChannelStates(
                 filter: any(named: 'filter'),
-                sort: any(named: 'sort'),
+                channelStateSort: any(named: 'channelStateSort'),
                 paginationParams: any(named: 'paginationParams'),
               )).thenAnswer((_) async => persistentChannelStates);
 
@@ -674,7 +684,7 @@ void main() {
 
           verify(() => persistence.getChannelStates(
                 filter: any(named: 'filter'),
-                sort: any(named: 'sort'),
+                channelStateSort: any(named: 'channelStateSort'),
                 paginationParams: any(named: 'paginationParams'),
               )).called(1);
 
@@ -715,7 +725,7 @@ void main() {
 
           when(() => persistence.getChannelStates(
                 filter: any(named: 'filter'),
-                sort: any(named: 'sort'),
+                channelStateSort: any(named: 'channelStateSort'),
                 paginationParams: any(named: 'paginationParams'),
               )).thenAnswer((_) async => persistentChannelStates);
 
@@ -757,7 +767,7 @@ void main() {
 
           verify(() => persistence.getChannelStates(
                 filter: any(named: 'filter'),
-                sort: any(named: 'sort'),
+                channelStateSort: any(named: 'channelStateSort'),
                 paginationParams: any(named: 'paginationParams'),
               )).called(1);
 

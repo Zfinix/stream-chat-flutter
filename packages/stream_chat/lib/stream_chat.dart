@@ -11,6 +11,7 @@ export 'package:uuid/uuid.dart';
 
 export './src/core/api/attachment_file_uploader.dart';
 export './src/core/api/requests.dart';
+export './src/core/api/requests.dart';
 export './src/core/api/responses.dart';
 export './src/core/api/stream_chat_api.dart' show PushProvider;
 export './src/core/error/error.dart';
@@ -61,6 +62,7 @@ export 'src/core/models/own_user.dart';
 export 'src/core/models/reaction.dart';
 export 'src/core/models/read.dart';
 export 'src/core/models/user.dart';
+export 'src/core/platform_detector/platform_detector.dart';
 export 'src/core/util/extension.dart';
 export 'src/db/chat_persistence_client.dart';
 export 'src/event_type.dart';

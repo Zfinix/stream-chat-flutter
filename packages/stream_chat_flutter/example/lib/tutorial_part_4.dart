@@ -1,6 +1,4 @@
 // ignore_for_file: public_member_api_docs
-// ignore_for_file: prefer_expression_function_bodies
-
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
@@ -72,7 +70,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
       'members',
       [StreamChat.of(context).currentUser!.id],
     ),
-    sort: const [SortOption('last_message_at')],
+    channelStateSort: const [SortOption('last_message_at')],
     limit: 20,
   );
 
@@ -106,21 +104,23 @@ class ChannelPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: const StreamChannelHeader(),
-        body: Column(
-          children: <Widget>[
-            Expanded(
-              child: StreamMessageListView(
-                threadBuilder: (_, parentMessage) => ThreadPage(
-                  parent: parentMessage,
-                ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const StreamChannelHeader(),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: StreamMessageListView(
+              threadBuilder: (_, parentMessage) => ThreadPage(
+                parent: parentMessage,
               ),
             ),
-            const StreamMessageInput(),
-          ],
-        ),
-      );
+          ),
+          const StreamMessageInput(),
+        ],
+      ),
+    );
+  }
 }
 
 class ThreadPage extends StatelessWidget {
