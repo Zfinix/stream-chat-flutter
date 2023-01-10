@@ -14,8 +14,6 @@ part 'stream_chat_localizations_ko.dart';
 part 'stream_chat_localizations_pt.dart';
 part 'stream_chat_localizations_no.dart';
 
-part 'stream_chat_localizations_no.dart';
-
 /// The set of supported languages, as language code strings.
 ///
 /// The [GlobalStreamChatLocalizations.delegate] can generate localizations for

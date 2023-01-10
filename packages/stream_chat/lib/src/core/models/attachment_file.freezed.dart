@@ -224,9 +224,7 @@ class _$Preparing extends Preparing {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$PreparingToJson(
-      this,
-    );
+    return _$$PreparingToJson(this);
   }
 }
 
@@ -394,9 +392,7 @@ class _$InProgress extends InProgress {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$InProgressToJson(
-      this,
-    );
+    return _$$InProgressToJson(this);
   }
 }
 
@@ -408,8 +404,8 @@ abstract class InProgress extends UploadState {
   factory InProgress.fromJson(Map<String, dynamic> json) =
       _$InProgress.fromJson;
 
-  int get uploaded;
-  int get total;
+  int get uploaded => throw _privateConstructorUsedError;
+  int get total => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   _$$InProgressCopyWith<_$InProgress> get copyWith =>
       throw _privateConstructorUsedError;
@@ -535,9 +531,7 @@ class _$Success extends Success {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SuccessToJson(
-      this,
-    );
+    return _$$SuccessToJson(this);
   }
 }
 
@@ -692,9 +686,7 @@ class _$Failed extends Failed {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$FailedToJson(
-      this,
-    );
+    return _$$FailedToJson(this);
   }
 }
 
@@ -704,7 +696,7 @@ abstract class Failed extends UploadState {
 
   factory Failed.fromJson(Map<String, dynamic> json) = _$Failed.fromJson;
 
-  String get error;
+  String get error => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   _$$FailedCopyWith<_$Failed> get copyWith =>
       throw _privateConstructorUsedError;
