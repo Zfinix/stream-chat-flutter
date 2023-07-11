@@ -57,7 +57,7 @@ class StreamMessageWidget extends StatefulWidget {
     this.onMessageTap,
     bool? showReactionPicker,
     @Deprecated('Use `showReactionPicker` instead')
-    bool showReactionPickerIndicator = true,
+        bool showReactionPickerIndicator = true,
     @internal this.showReactionPickerTail = false,
     this.showUserAvatar = DisplayWidget.show,
     this.showSendingIndicator = true,
@@ -638,7 +638,7 @@ class StreamMessageWidget extends StatefulWidget {
     void Function(String)? onLinkTap,
     bool? showReactionPicker,
     @Deprecated('Use `showReactionPicker` instead')
-    bool? showReactionPickerIndicator,
+        bool? showReactionPickerIndicator,
     @internal bool? showReactionPickerTail,
     List<Read>? readList,
     ShowMessageCallback? onShowMessage,

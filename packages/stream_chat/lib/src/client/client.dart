@@ -572,7 +572,7 @@ class StreamChatClient {
   Stream<List<Channel>> queryChannels({
     Filter? filter,
     @Deprecated('Use channelStateSort instead.')
-    List<SortOption<ChannelModel>>? sort,
+        List<SortOption<ChannelModel>>? sort,
     List<SortOption<ChannelState>>? channelStateSort,
     bool state = true,
     bool watch = true,
@@ -732,8 +732,7 @@ class StreamChatClient {
     Filter? filter,
     @Deprecated('''
     sort has been deprecated. 
-    Please use channelStateSort instead.''')
-    List<SortOption<ChannelModel>>? sort,
+    Please use channelStateSort instead.''') List<SortOption<ChannelModel>>? sort,
     List<SortOption<ChannelState>>? channelStateSort,
     PaginationParams paginationParams = const PaginationParams(),
   }) async {
