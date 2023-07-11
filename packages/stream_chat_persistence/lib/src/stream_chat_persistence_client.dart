@@ -252,7 +252,7 @@ class StreamChatPersistenceClient extends ChatPersistenceClient {
   Future<List<ChannelState>> getChannelStates({
     Filter? filter,
     @Deprecated('Use channelStateSort instead.')
-        List<SortOption<ChannelModel>>? sort,
+    List<SortOption<ChannelModel>>? sort,
     List<SortOption<ChannelState>>? channelStateSort,
     PaginationParams? paginationParams,
   }) async {

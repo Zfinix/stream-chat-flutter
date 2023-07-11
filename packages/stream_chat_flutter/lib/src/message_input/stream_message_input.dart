@@ -111,7 +111,7 @@ class StreamMessageInput extends StatefulWidget {
     this.fileAttachmentBuilder,
     this.mediaAttachmentBuilder,
     @Deprecated('Use `mediaAttachmentBuilder` instead.')
-        this.attachmentThumbnailBuilders,
+    this.attachmentThumbnailBuilders,
     this.focusNode,
     this.sendButtonLocation = SendButtonLocation.outside,
     this.autofocus = false,

@@ -101,7 +101,7 @@ class StreamMessageListView extends StatefulWidget {
       'Try wrapping the `MessageWidget` with a `Swipeable`, `Dismissible` or a '
       'custom widget to achieve the swipe to reply behaviour.',
     )
-        this.onMessageSwiped,
+    this.onMessageSwiped,
     this.highlightInitialMessage = false,
     this.messageHighlightColor,
     this.showConnectionStateTile = false,
