@@ -64,8 +64,11 @@ class Message extends Equatable {
     this.showInChannel,
     this.command,
     DateTime? createdAt,
+    this.localCreatedAt,
     DateTime? updatedAt,
-    this.deletedAt,
+    this.localUpdatedAt,
+    DateTime? deletedAt,
+    this.localDeletedAt,
     this.user,
     this.pinned = false,
     this.pinnedAt,
@@ -76,8 +79,9 @@ class Message extends Equatable {
     this.i18n,
   })  : id = id ?? const Uuid().v4(),
         pinExpires = pinExpires?.toUtc(),
-        _createdAt = createdAt,
-        _updatedAt = updatedAt,
+        remoteCreatedAt = createdAt,
+        remoteUpdatedAt = updatedAt,
+        remoteDeletedAt = deletedAt,
         _quotedMessageId = quotedMessageId;
 
   /// Create a new instance from JSON.
@@ -95,14 +99,11 @@ class Message extends Equatable {
   final String? text;
 
   /// The status of a sending message.
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final MessageSendingStatus status;
 
   /// The message type.
-  @JsonKey(
-    includeIfNull: false,
-    toJson: Serializer.readOnly,
-  )
+  @JsonKey(includeToJson: false)
   final String type;
 
   /// The list of attachments, either provided by the user or generated from a
@@ -115,26 +116,26 @@ class Message extends Equatable {
   final List<User> mentionedUsers;
 
   /// A map describing the count of number of every reaction.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final Map<String, int>? reactionCounts;
 
   /// A map describing the count of score of every reaction.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final Map<String, int>? reactionScores;
 
   /// The latest reactions to the message created by any user.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final List<Reaction>? latestReactions;
 
   /// The reactions added to the message by the current user.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final List<Reaction>? ownReactions;
 
   /// The ID of the parent message, if the message is a thread reply.
   final String? parentId;
 
   /// A quoted reply message.
-  @JsonKey(toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final Message? quotedMessage;
 
   final String? _quotedMessageId;
@@ -143,11 +144,11 @@ class Message extends Equatable {
   String? get quotedMessageId => _quotedMessageId ?? quotedMessage?.id;
 
   /// Reserved field indicating the number of replies for this message.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final int? replyCount;
 
   /// Reserved field indicating the thread participants for this message.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final List<User>? threadParticipants;
 
   /// Check if this message needs to show in the channel.
@@ -157,41 +158,66 @@ class Message extends Equatable {
   final bool silent;
 
   /// If true the message is shadowed.
-  @JsonKey(
-    includeIfNull: false,
-    toJson: Serializer.readOnly,
-  )
+  @JsonKey(includeToJson: false)
   final bool shadowed;
 
   /// A used command name.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final String? command;
 
-  final DateTime? _createdAt;
+  /// Indicates when the message was created.
+  ///
+  /// Returns the latest between [localCreatedAt] and [remoteCreatedAt].
+  /// If both are null, returns [DateTime.now].
+  @JsonKey(includeToJson: false)
+  DateTime get createdAt => localCreatedAt ?? remoteCreatedAt ?? DateTime.now();
 
-  /// Reserved field indicating when the message was deleted.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
-  final DateTime? deletedAt;
+  /// Indicates when the message was created locally.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final DateTime? localCreatedAt;
 
-  /// Reserved field indicating when the message was created.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
-  DateTime get createdAt => _createdAt ?? DateTime.now();
+  /// Indicates when the message was created on the server.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final DateTime? remoteCreatedAt;
 
-  final DateTime? _updatedAt;
+  /// Indicates when the message was updated last time.
+  ///
+  /// Returns the latest between [localUpdatedAt] and [remoteUpdatedAt].
+  /// If both are null, returns [createdAt].
+  @JsonKey(includeToJson: false)
+  DateTime get updatedAt => localUpdatedAt ?? remoteUpdatedAt ?? createdAt;
 
-  /// Reserved field indicating when the message was updated last time.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
-  DateTime get updatedAt => _updatedAt ?? DateTime.now();
+  /// Indicates when the message was updated locally.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final DateTime? localUpdatedAt;
+
+  /// Indicates when the message was updated on the server.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final DateTime? remoteUpdatedAt;
+
+  /// Indicates when the message was deleted.
+  ///
+  /// Returns the latest between [localDeletedAt] and [remoteDeletedAt].
+  @JsonKey(includeToJson: false)
+  DateTime? get deletedAt => localDeletedAt ?? remoteDeletedAt;
+
+  /// Indicates when the message was deleted locally.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final DateTime? localDeletedAt;
+
+  /// Indicates when the message was deleted on the server.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final DateTime? remoteDeletedAt;
 
   /// User who sent the message.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final User? user;
 
   /// If true the message is pinned.
   final bool pinned;
 
   /// Reserved field indicating when the message was pinned.
-  @JsonKey(toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final DateTime? pinnedAt;
 
   /// Reserved field indicating when the message will expire.
@@ -200,11 +226,10 @@ class Message extends Equatable {
   final DateTime? pinExpires;
 
   /// Reserved field indicating who pinned the message.
-  @JsonKey(toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final User? pinnedBy;
 
   /// Message custom extraData.
-  @JsonKey(includeIfNull: false)
   final Map<String, Object?> extraData;
 
   /// True if the message is a system info.
@@ -217,7 +242,7 @@ class Message extends Equatable {
   bool get isEphemeral => type == 'ephemeral';
 
   /// A Map of translations.
-  @JsonKey(includeIfNull: false)
+  @JsonKey(includeToJson: false)
   final Map<String, String>? i18n;
 
   /// Known top level fields.
@@ -280,8 +305,11 @@ class Message extends Equatable {
     bool? showInChannel,
     String? command,
     DateTime? createdAt,
+    DateTime? localCreatedAt,
     DateTime? updatedAt,
+    DateTime? localUpdatedAt,
     DateTime? deletedAt,
+    DateTime? localDeletedAt,
     User? user,
     bool? pinned,
     DateTime? pinnedAt,
@@ -345,9 +373,12 @@ class Message extends Equatable {
       threadParticipants: threadParticipants ?? this.threadParticipants,
       showInChannel: showInChannel ?? this.showInChannel,
       command: command ?? this.command,
-      createdAt: createdAt ?? _createdAt,
-      updatedAt: updatedAt ?? _updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
+      createdAt: createdAt ?? remoteCreatedAt,
+      localCreatedAt: localCreatedAt ?? this.localCreatedAt,
+      updatedAt: updatedAt ?? remoteUpdatedAt,
+      localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
+      deletedAt: deletedAt ?? remoteDeletedAt,
+      localDeletedAt: localDeletedAt ?? this.localDeletedAt,
       user: user ?? this.user,
       pinned: pinned ?? this.pinned,
       pinnedAt: pinnedAt ?? this.pinnedAt,
@@ -381,9 +412,12 @@ class Message extends Equatable {
         threadParticipants: other.threadParticipants,
         showInChannel: other.showInChannel,
         command: other.command,
-        createdAt: other.createdAt,
-        updatedAt: other.updatedAt,
-        deletedAt: other.deletedAt,
+        createdAt: other.remoteCreatedAt,
+        localCreatedAt: other.localCreatedAt,
+        updatedAt: other.remoteUpdatedAt,
+        localUpdatedAt: other.localUpdatedAt,
+        deletedAt: other.remoteDeletedAt,
+        localDeletedAt: other.localDeletedAt,
         user: other.user,
         pinned: other.pinned,
         pinnedAt: other.pinnedAt,
@@ -393,6 +427,28 @@ class Message extends Equatable {
         status: other.status,
         i18n: other.i18n,
       );
+
+  /// Returns a new [Message] that is [other] with local changes applied to it.
+  ///
+  /// This ensures that the local sync changes are not lost when the message is
+  /// updated on the server.
+  ///
+  /// For example, when a message is sent, it is immediately shown
+  /// optimistically in the UI. When the message is received from the server,
+  /// it will not contain the local changes. This method can be used to merge
+  /// the local changes back into the message.
+  ///
+  /// This also helps in maintaining the order of the messages in the channel
+  /// when the messages are sorted by the [createdAt] field.
+  Message syncWith(Message? other) {
+    if (other == null) return this;
+
+    return copyWith(
+      localCreatedAt: other.localCreatedAt,
+      localUpdatedAt: other.localUpdatedAt,
+      localDeletedAt: other.localDeletedAt,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -414,9 +470,12 @@ class Message extends Equatable {
         shadowed,
         silent,
         command,
-        _createdAt,
-        _updatedAt,
-        deletedAt,
+        localCreatedAt,
+        remoteCreatedAt,
+        localUpdatedAt,
+        remoteUpdatedAt,
+        localDeletedAt,
+        remoteDeletedAt,
         user,
         pinned,
         pinnedAt,

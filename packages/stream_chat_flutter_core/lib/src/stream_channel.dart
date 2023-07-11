@@ -251,14 +251,14 @@ class StreamChannelState extends State<StreamChannel> {
     channel.state!.truncate();
 
     if (messageId == null) {
-      await channel.query(
+      final state = await channel.query(
         messagesPagination: PaginationParams(
           limit: limit,
         ),
         preferOffline: preferOffline,
       );
       channel.state!.isUpToDate = true;
-      return null;
+      return state;
     }
 
     return channel.query(
@@ -387,12 +387,20 @@ class StreamChannelState extends State<StreamChannel> {
         (it) => it.user.id == channel.client.state.currentUser?.id,
       );
 
-      if (read != null &&
-          !(channel.state!.messages
-                  .any((it) => it.createdAt.compareTo(read.lastRead) > 0) &&
-              channel.state!.messages
-                  .any((it) => it.createdAt.compareTo(read.lastRead) <= 0))) {
-        _futures.add(_loadChannelAtTimestamp(read.lastRead));
+      if (read == null) return;
+
+      final messages = channel.state!.messages;
+      final lastRead = read.lastRead;
+
+      final hasNewMessages =
+          messages.any((it) => it.createdAt.isAfter(lastRead));
+      final hasOldMessages =
+          messages.any((it) => it.createdAt.isBeforeOrEqualTo(lastRead));
+
+      // Only load messages if the unread message is in-between the messages.
+      // Otherwise, we can just load the channel normally.
+      if (hasNewMessages && hasOldMessages) {
+        _futures.add(_loadChannelAtTimestamp(lastRead));
       }
     }
   }
@@ -422,30 +430,35 @@ class StreamChannelState extends State<StreamChannel> {
       ],
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          var message = snapshot.error.toString();
-          if (snapshot.error is DioError) {
-            final dioError = snapshot.error as DioError?;
-            if (dioError?.type == DioErrorType.response) {
-              message = dioError!.message;
-            } else {
-              message = 'Check your connection and retry';
+          final error = snapshot.error;
+          if (error is DioException) {
+            if (error.type == DioExceptionType.badResponse) {
+              return Center(child: Text(error.message ?? 'Bad response'));
             }
+            return const Center(child: Text('Check your connection and retry'));
           }
-          return Center(child: Text(message));
+
+          return Center(child: Text(error.toString()));
         }
 
         final dataLoaded = snapshot.data?.every((it) => it) == true;
         if (widget.showLoading && !dataLoaded) {
           return const Center(
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator.adaptive(),
           );
         }
         return widget.child;
       },
     );
-    if (initialMessageId != null) {
+    if (_futures.length > 1) {
       child = Material(child: child);
     }
     return child;
+  }
+}
+
+extension on DateTime {
+  bool isBeforeOrEqualTo(DateTime other) {
+    return isBefore(other) || isAtSameMomentAs(other);
   }
 }

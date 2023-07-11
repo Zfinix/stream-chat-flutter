@@ -2,49 +2,37 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:stream_chat_flutter/scrollable_positioned_list/src/viewport.dart';
+import 'package:stream_chat_flutter/scrollable_positioned_list/src/wrapping.dart';
 
-/// {@template custom_scroll_view}
-/// A version of [CustomScrollView] that does not constrict the extents
+/// {@template unbounded_custom_scroll_view}
+/// A version of [CustomScrollView] that allows does not constrict the extents
 /// to be within 0 and 1. See [CustomScrollView] for more information.
 /// {@endtemplate}
 class UnboundedCustomScrollView extends CustomScrollView {
-  /// {@macro custom_scroll_view}
+  /// {@macro unbounded_custom_scroll_view}
   const UnboundedCustomScrollView({
-    Key? key,
-    Axis scrollDirection = Axis.vertical,
-    bool reverse = false,
-    ScrollController? controller,
-    bool? primary,
-    ScrollPhysics? physics,
+    super.key,
+    super.scrollDirection,
+    super.reverse,
+    super.controller,
+    super.primary,
+    super.physics,
     bool shrinkWrap = false,
-    Key? center,
+    super.center,
     double anchor = 0.0,
-    double? cacheExtent,
-    List<Widget> slivers = const <Widget>[],
-    int? semanticChildCount,
-    DragStartBehavior dragStartBehavior = DragStartBehavior.start,
-    ScrollViewKeyboardDismissBehavior? keyboardDismissBehavior,
-  })  : _anchor = anchor,
-        super(
-          key: key,
-          keyboardDismissBehavior: keyboardDismissBehavior ??
-              ScrollViewKeyboardDismissBehavior.manual,
-          scrollDirection: scrollDirection,
-          reverse: reverse,
-          controller: controller,
-          primary: primary,
-          physics: physics,
-          shrinkWrap: shrinkWrap,
-          center: center,
-          cacheExtent: cacheExtent,
-          semanticChildCount: semanticChildCount,
-          dragStartBehavior: dragStartBehavior,
-          slivers: slivers,
-        );
+    super.cacheExtent,
+    super.slivers,
+    super.semanticChildCount,
+    super.dragStartBehavior,
+    super.keyboardDismissBehavior,
+  })  : _shrinkWrap = shrinkWrap,
+        _anchor = anchor,
+        super(shrinkWrap: false);
+
+  final bool _shrinkWrap;
 
   // [CustomScrollView] enforces constraints on [CustomScrollView.anchor], so
   // we need our own version.
@@ -62,11 +50,14 @@ class UnboundedCustomScrollView extends CustomScrollView {
     AxisDirection axisDirection,
     List<Widget> slivers,
   ) {
-    if (shrinkWrap) {
-      return ShrinkWrappingViewport(
+    if (_shrinkWrap) {
+      return CustomShrinkWrappingViewport(
         axisDirection: axisDirection,
         offset: offset,
         slivers: slivers,
+        cacheExtent: cacheExtent,
+        center: center,
+        anchor: anchor,
       );
     }
     return UnboundedViewport(

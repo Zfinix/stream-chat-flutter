@@ -36,6 +36,12 @@ class EventType {
   /// Event sent when updating a message
   static const String messageUpdated = 'message.updated';
 
+  /// Event sent when a user starts watching a channel
+  static const String userWatchingStart = 'user.watching.start';
+
+  /// Event sent when a user stops watching a channel
+  static const String userWatchingStop = 'user.watching.stop';
+
   /// Event sent when reading a message
   static const String messageRead = 'message.read';
 
@@ -57,7 +63,7 @@ class EventType {
   static const String notificationAddedToChannel =
       'notification.added_to_channel';
 
-  /// Event sent when the user is removed to a channel
+  /// Event sent when the user is removed from a channel
   static const String notificationRemovedFromChannel =
       'notification.removed_from_channel';
 
@@ -70,7 +76,7 @@ class EventType {
   /// Event sent when a member is added to a channel
   static const String memberAdded = 'member.added';
 
-  /// Event sent when a member is removed to a channel
+  /// Event sent when a member is removed from a channel
   static const String memberRemoved = 'member.removed';
 
   /// Event sent when a member is updated in a channel

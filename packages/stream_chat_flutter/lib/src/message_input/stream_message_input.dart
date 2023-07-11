@@ -3,13 +3,10 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart'
-    hide ErrorListener;
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/services.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:stream_chat_flutter/platform_widget_builder/src/platform_widget_builder.dart';
 import 'package:stream_chat_flutter/src/message_input/attachment_button.dart';
 import 'package:stream_chat_flutter/src/message_input/command_button.dart';
@@ -18,11 +15,37 @@ import 'package:stream_chat_flutter/src/message_input/quoted_message_widget.dart
 import 'package:stream_chat_flutter/src/message_input/quoting_message_top_area.dart';
 import 'package:stream_chat_flutter/src/message_input/simple_safe_area.dart';
 import 'package:stream_chat_flutter/src/message_input/tld.dart';
-import 'package:stream_chat_flutter/src/video/video_thumbnail_image.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 const _kCommandTrigger = '/';
 const _kMentionTrigger = '@';
+
+/// Signature for the function that determines if a [matchedUri] should be
+/// previewed as an OG Attachment.
+typedef OgPreviewFilter = bool Function(
+  Uri matchedUri,
+  String messageText,
+);
+
+/// Different types of hints that can be shown in [StreamMessageInput].
+enum HintType {
+  /// Hint for [StreamMessageInput] when the command is enabled and the command
+  /// is 'giphy'.
+  searchGif,
+
+  /// Hint for [StreamMessageInput] when there are attachments.
+  addACommentOrSend,
+
+  /// Hint for [StreamMessageInput] when slow mode is enabled.
+  slowModeOn,
+
+  /// Hint for [StreamMessageInput] when other conditions are not met.
+  writeAMessage,
+}
+
+/// Function that returns the hint text for [StreamMessageInput] based on
+/// [type].
+typedef HintGetter = String? Function(BuildContext context, HintType type);
 
 /// Inactive state:
 ///
@@ -82,6 +105,12 @@ class StreamMessageInput extends StatefulWidget {
     this.messageInputController,
     this.actions = const [],
     this.actionsLocation = ActionsLocation.left,
+    this.attachmentListBuilder,
+    this.fileAttachmentListBuilder,
+    this.mediaAttachmentListBuilder,
+    this.fileAttachmentBuilder,
+    this.mediaAttachmentBuilder,
+    @Deprecated('Use `mediaAttachmentBuilder` instead.')
     this.attachmentThumbnailBuilders,
     this.focusNode,
     this.sendButtonLocation = SendButtonLocation.outside,
@@ -94,12 +123,15 @@ class StreamMessageInput extends StatefulWidget {
     this.maxAttachmentSize = kDefaultMaxAttachmentSize,
     this.onError,
     this.attachmentLimit = 10,
+    this.allowedAttachmentPickerTypes = AttachmentPickerType.values,
     this.onAttachmentLimitExceed,
     this.attachmentButtonBuilder,
     this.commandButtonBuilder,
     this.customAutocompleteTriggers = const [],
     this.mentionAllAppUsers = false,
     this.sendButtonBuilder,
+    this.quotedMessageBuilder,
+    this.quotedMessageAttachmentThumbnailBuilders,
     this.shouldKeepFocusAfterMessage,
     this.validator = _defaultValidator,
     this.restorationId,
@@ -110,7 +142,18 @@ class StreamMessageInput extends StatefulWidget {
     this.enableMentionsOverlay = true,
     this.onQuotedMessageCleared,
     this.enableActionAnimation = true,
+    this.sendMessageKeyPredicate = _defaultSendMessageKeyPredicate,
+    this.clearQuotedMessageKeyPredicate =
+        _defaultClearQuotedMessageKeyPredicate,
+    this.ogPreviewFilter = _defaultOgPreviewFilter,
+    this.hintGetter = _defaultHintGetter,
   });
+
+  /// The predicate used to send a message on desktop/web
+  final KeyEventPredicate sendMessageKeyPredicate;
+
+  /// The predicate used to clear the quoted message on desktop/web
+  final KeyEventPredicate clearQuotedMessageKeyPredicate;
 
   /// If true the message input will animate the actions while you type
   final bool enableActionAnimation;
@@ -167,8 +210,40 @@ class StreamMessageInput extends StatefulWidget {
   /// The location of the custom actions.
   final ActionsLocation actionsLocation;
 
+  /// Builder used to build the attachment list present in the message input.
+  ///
+  /// In case you want to customize only sub-parts of the attachment list,
+  /// consider using [fileAttachmentListBuilder], [mediaAttachmentListBuilder].
+  final AttachmentListBuilder? attachmentListBuilder;
+
+  /// Builder used to build the file type attachment list.
+  ///
+  /// In case you want to customize the attachment item, consider using
+  /// [fileAttachmentBuilder].
+  final AttachmentListBuilder? fileAttachmentListBuilder;
+
+  /// Builder used to build the media type attachment list.
+  ///
+  /// In case you want to customize the attachment item, consider using
+  /// [mediaAttachmentBuilder].
+  final AttachmentListBuilder? mediaAttachmentListBuilder;
+
+  /// Builder used to build the file attachment item.
+  final AttachmentItemBuilder? fileAttachmentBuilder;
+
+  /// Builder used to build the media attachment item.
+  final AttachmentItemBuilder? mediaAttachmentBuilder;
+
   /// Map that defines a thumbnail builder for an attachment type.
+  @Deprecated('Use `mediaAttachmentBuilder` instead.')
   final Map<String, AttachmentThumbnailBuilder>? attachmentThumbnailBuilders;
+
+  /// Map that defines a thumbnail builder for an attachment type.
+  ///
+  /// This is used to build the thumbnail for the attachment in the quoted
+  /// message.
+  final Map<String, QuotedMessageAttachmentThumbnailBuilder>?
+      quotedMessageAttachmentThumbnailBuilders;
 
   /// The focus node associated to the TextField.
   final FocusNode? focusNode;
@@ -194,6 +269,12 @@ class StreamMessageInput extends StatefulWidget {
   /// A limit for the no. of attachments that can be sent with a single message.
   final int attachmentLimit;
 
+  /// The list of allowed attachment types which can be picked using the
+  /// attachment button.
+  ///
+  /// By default, all the attachment types are allowed.
+  final List<AttachmentPickerType> allowedAttachmentPickerTypes;
+
   /// A callback for when the [attachmentLimit] is exceeded.
   ///
   /// This will override the default error alert behaviour.
@@ -218,6 +299,9 @@ class StreamMessageInput extends StatefulWidget {
 
   /// Builder for creating send button
   final MessageRelatedBuilder? sendButtonBuilder;
+
+  /// Builder for building quoted message
+  final Widget Function(BuildContext, Message)? quotedMessageBuilder;
 
   /// Defines if the [StreamMessageInput] loses focuses after a message is sent.
   /// The default behaviour keeps focus until a command is enabled.
@@ -249,8 +333,55 @@ class StreamMessageInput extends StatefulWidget {
   /// Callback for when the quoted message is cleared
   final VoidCallback? onQuotedMessageCleared;
 
+  /// The filter used to determine if a link should be shown as an OpenGraph
+  /// preview.
+  final OgPreviewFilter ogPreviewFilter;
+
+  /// Returns the hint text for the message input.
+  final HintGetter hintGetter;
+
+  static String? _defaultHintGetter(
+    BuildContext context,
+    HintType type,
+  ) {
+    switch (type) {
+      case HintType.searchGif:
+        return context.translations.searchGifLabel;
+      case HintType.addACommentOrSend:
+        return context.translations.addACommentOrSendLabel;
+      case HintType.slowModeOn:
+        return context.translations.slowModeOnLabel;
+      case HintType.writeAMessage:
+        return context.translations.writeAMessageLabel;
+    }
+  }
+
+  static bool _defaultOgPreviewFilter(
+    Uri matchedUri,
+    String messageText,
+  ) {
+    // Show the preview for all links
+    return true;
+  }
+
   static bool _defaultValidator(Message message) =>
       message.text?.isNotEmpty == true || message.attachments.isNotEmpty;
+
+  static bool _defaultSendMessageKeyPredicate(
+    FocusNode node,
+    KeyEvent event,
+  ) {
+    // On desktop/web, send the message when the user presses the enter key.
+    return event is KeyUpEvent && event.logicalKey == LogicalKeyboardKey.enter;
+  }
+
+  static bool _defaultClearQuotedMessageKeyPredicate(
+    FocusNode node,
+    KeyEvent event,
+  ) {
+    // On desktop/web, clear the quoted message when the user presses the escape key.
+    return event is KeyUpEvent && event.logicalKey == LogicalKeyboardKey.escape;
+  }
 
   @override
   StreamMessageInputState createState() => StreamMessageInputState();
@@ -509,9 +640,6 @@ class StreamMessageInputState extends State<StreamMessageInput>
                             : CrossFadeState.showSecond,
                       ),
                     ),
-                  // PlatformWidgetBuilder(
-                  //   mobile: (context, child) => _buildFilePickerSection(),
-                  // ),
                 ],
               ),
             ),
@@ -688,8 +816,8 @@ class StreamMessageInputState extends State<StreamMessageInput>
   Future<void> _onAttachmentButtonPressed() async {
     final attachments = await showStreamAttachmentPickerModalBottomSheet(
       context: context,
+      allowedTypes: widget.allowedAttachmentPickerTypes,
       initialAttachments: _effectiveController.attachments,
-      useRootNavigator: true,
     );
 
     if (attachments != null) {
@@ -753,24 +881,12 @@ class StreamMessageInputState extends State<StreamMessageInput>
                   LimitedBox(
                     maxHeight: widget.maxHeight,
                     child: PlatformWidgetBuilder(
-                      web: (context, child) => KeyboardShortcutRunner(
-                        onEnterKeypress: sendMessage,
-                        onEscapeKeypress: () {
-                          if (_hasQuotedMessage &&
-                              _effectiveController.text.isEmpty) {
-                            widget.onQuotedMessageCleared?.call();
-                          }
-                        },
+                      web: (context, child) => Focus(
+                        onKeyEvent: _handleKeyPressed,
                         child: child!,
                       ),
-                      desktop: (context, child) => KeyboardShortcutRunner(
-                        onEnterKeypress: sendMessage,
-                        onEscapeKeypress: () {
-                          if (_hasQuotedMessage &&
-                              _effectiveController.text.isEmpty) {
-                            widget.onQuotedMessageCleared?.call();
-                          }
-                        },
+                      desktop: (context, child) => Focus(
+                        onKeyEvent: _handleKeyPressed,
                         child: child!,
                       ),
                       mobile: (context, child) => child,
@@ -799,6 +915,25 @@ class StreamMessageInputState extends State<StreamMessageInput>
         ),
       ),
     );
+  }
+
+  KeyEventResult _handleKeyPressed(FocusNode node, KeyEvent event) {
+    // Check for send message key.
+    if (widget.sendMessageKeyPredicate(node, event)) {
+      sendMessage();
+      return KeyEventResult.handled;
+    }
+
+    // Check for clear quoted message key.
+    if (widget.clearQuotedMessageKeyPredicate(node, event)) {
+      if (_hasQuotedMessage && _effectiveController.text.isEmpty) {
+        widget.onQuotedMessageCleared?.call();
+      }
+      return KeyEventResult.handled;
+    }
+
+    // Return ignored to allow other key events to be handled.
+    return KeyEventResult.ignored;
   }
 
   InputDecoration _getInputDecoration(BuildContext context) {
@@ -932,24 +1067,27 @@ class StreamMessageInputState extends State<StreamMessageInput>
     leading: true,
   );
 
-  String _getHint(BuildContext context) {
+  String? _getHint(BuildContext context) {
+    HintType hintType;
+
     if (_commandEnabled && _effectiveController.message.command == 'giphy') {
-      return context.translations.searchGifLabel;
-    }
-    if (_effectiveController.attachments.isNotEmpty) {
-      return context.translations.addACommentOrSendLabel;
-    }
-    if (_timeOut != 0) {
-      return context.translations.slowModeOnLabel;
+      hintType = HintType.searchGif;
+    } else if (_effectiveController.attachments.isNotEmpty) {
+      hintType = HintType.addACommentOrSend;
+    } else if (_timeOut != 0) {
+      hintType = HintType.slowModeOn;
+    } else {
+      hintType = HintType.writeAMessage;
     }
 
-    return context.translations.writeAMessageLabel;
+    return widget.hintGetter.call(context, hintType);
   }
 
   String? _lastSearchedContainsUrlText;
   CancelableOperation? _enrichUrlOperation;
   final _urlRegex = RegExp(
     r'(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+',
+    caseSensitive: false,
   );
 
   void _checkContainsUrl(String value, BuildContext context) async {
@@ -960,11 +1098,13 @@ class StreamMessageInputState extends State<StreamMessageInput>
     if (_lastSearchedContainsUrlText == value) return;
     _lastSearchedContainsUrlText = value;
 
-    final matchedUrls = _urlRegex.allMatches(value).toList()
-      ..removeWhere((it) {
-        final _parsedMatch = Uri.tryParse(it.group(0) ?? '')?.withScheme;
-        return _parsedMatch?.host.split('.').last.isValidTLD() == false;
-      });
+    final matchedUrls = _urlRegex.allMatches(value).where((it) {
+      final _parsedMatch = Uri.tryParse(it.group(0) ?? '')?.withScheme;
+      if (_parsedMatch == null) return false;
+
+      return _parsedMatch.host.split('.').last.isValidTLD() &&
+          widget.ogPreviewFilter.call(_parsedMatch, value);
+    }).toList();
 
     // Reset the og attachment if the text doesn't contain any url
     if (matchedUrls.isEmpty ||
@@ -1009,209 +1149,126 @@ class StreamMessageInputState extends State<StreamMessageInput>
     var response = _ogAttachmentCache[url];
     if (response == null) {
       final client = StreamChat.of(context).client;
-      response = await client.enrichUrl(url);
-      _ogAttachmentCache[url] = response;
+      try {
+        response = await client.enrichUrl(url);
+        _ogAttachmentCache[url] = response;
+      } catch (e, stk) {
+        return Future.error(e, stk);
+      }
     }
     return response;
   }
 
   Widget _buildReplyToMessage() {
     if (!_hasQuotedMessage) return const Offstage();
-    final containsUrl = _effectiveController.message.quotedMessage!.attachments
-        .any((element) => element.titleLink != null);
+    final quotedMessage = _effectiveController.message.quotedMessage!;
+
+    final quotedMessageBuilder = widget.quotedMessageBuilder;
+    if (quotedMessageBuilder != null) {
+      return quotedMessageBuilder(
+        context,
+        _effectiveController.message.quotedMessage!,
+      );
+    }
+
+    final containsUrl = quotedMessage.attachments.any((it) {
+      return it.titleLink != null;
+    });
+
     return StreamQuotedMessageWidget(
       reverse: true,
       showBorder: !containsUrl,
-      message: _effectiveController.message.quotedMessage!,
+      message: quotedMessage,
       messageTheme: _streamChatTheme.otherMessageTheme,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
       onQuotedMessageClear: widget.onQuotedMessageCleared,
+      attachmentThumbnailBuilders:
+          widget.quotedMessageAttachmentThumbnailBuilders,
     );
   }
 
   Widget _buildAttachments() {
-    final nonOGAttachments = _effectiveController.attachments.where(
-      (it) => it.titleLink == null,
-    );
+    final attachments = _effectiveController.attachments;
+    final nonOGAttachments = attachments.where((it) {
+      return it.titleLink == null;
+    }).toList(growable: false);
+
+    // If there are no attachments, return an empty widget
     if (nonOGAttachments.isEmpty) return const Offstage();
-    final fileAttachments = nonOGAttachments
-        .where((it) => it.type == 'file')
-        .toList(growable: false);
-    final remainingAttachments = nonOGAttachments
-        .where((it) => it.type != 'file')
-        .toList(growable: false);
-    return Column(
-      children: [
-        if (fileAttachments.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: LimitedBox(
-              maxHeight: 136,
-              child: ListView(
-                reverse: true,
-                shrinkWrap: true,
-                children: fileAttachments.reversed
-                    .map<Widget>(
-                      (e) => ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: StreamFileAttachment(
-                          message: Message(), // dummy message
-                          attachment: e,
-                          constraints: BoxConstraints.loose(Size(
-                            MediaQuery.of(context).size.width * 0.65,
-                            56,
-                          )),
-                          trailing: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: _buildRemoveButton(e),
-                          ),
-                        ),
+
+    // If the user has provided a custom attachment list builder, use that.
+    final attachmentListBuilder = widget.attachmentListBuilder;
+    if (attachmentListBuilder != null) {
+      return attachmentListBuilder(
+        context,
+        nonOGAttachments,
+        _onAttachmentRemovePressed,
+      );
+    }
+
+    // Otherwise, use the default attachment list builder.
+    return LimitedBox(
+      maxHeight: 240,
+      child: StreamMessageInputAttachmentList(
+        attachments: nonOGAttachments,
+        onRemovePressed: _onAttachmentRemovePressed,
+        fileAttachmentListBuilder: widget.fileAttachmentListBuilder,
+        mediaAttachmentListBuilder: widget.mediaAttachmentListBuilder,
+        fileAttachmentBuilder: widget.fileAttachmentBuilder,
+        mediaAttachmentBuilder: widget.mediaAttachmentBuilder ??
+            // For backward compatibility.
+            // TODO: Remove in the next major release.
+            (context, attachment, onRemovePressed) {
+              final Widget mediaAttachmentThumbnail;
+
+              final builder =
+                  widget.attachmentThumbnailBuilders?[attachment.type];
+              if (builder != null) {
+                mediaAttachmentThumbnail = builder(context, attachment);
+              } else {
+                mediaAttachmentThumbnail = MessageInputMediaAttachmentThumbnail(
+                  attachment: attachment,
+                );
+              }
+
+              return ClipRRect(
+                key: Key(attachment.id),
+                borderRadius: BorderRadius.circular(10),
+                child: Stack(
+                  children: <Widget>[
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: mediaAttachmentThumbnail,
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: RemoveAttachmentButton(
+                        onPressed: onRemovePressed != null
+                            ? () => onRemovePressed(attachment)
+                            : null,
                       ),
-                    )
-                    .insertBetween(const SizedBox(height: 8)),
-              ),
-            ),
-          ),
-        if (remainingAttachments.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: LimitedBox(
-              maxHeight: 104,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: remainingAttachments
-                    .map<Widget>(
-                      (attachment) => ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Stack(
-                          children: <Widget>[
-                            AspectRatio(
-                              aspectRatio: 1,
-                              child: SizedBox(
-                                height: 104,
-                                width: 104,
-                                child: _buildAttachment(attachment),
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: _buildRemoveButton(attachment),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                    .insertBetween(const SizedBox(width: 8)),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildRemoveButton(Attachment attachment) {
-    return SizedBox(
-      height: 24,
-      width: 24,
-      child: RawMaterialButton(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        elevation: 0,
-        highlightElevation: 0,
-        focusElevation: 0,
-        hoverElevation: 0,
-        onPressed: () async {
-          final file = attachment.file;
-          final uploadState = attachment.uploadState;
-
-          if (file != null && !uploadState.isSuccess && !isWeb) {
-            await StreamAttachmentHandler.instance.deleteAttachmentFile(
-              attachmentFile: file,
-            );
-          }
-
-          _effectiveController.removeAttachmentById(attachment.id);
-        },
-        fillColor:
-            _streamChatTheme.colorTheme.textHighEmphasis.withOpacity(0.5),
-        child: Center(
-          child: StreamSvgIcon.close(
-            size: 24,
-            color: _streamChatTheme.colorTheme.barsBg,
-          ),
-        ),
+                    ),
+                  ],
+                ),
+              );
+            },
       ),
     );
   }
 
-  Widget _buildAttachment(Attachment attachment) {
-    if (widget.attachmentThumbnailBuilders?.containsKey(attachment.type) ==
-        true) {
-      return widget.attachmentThumbnailBuilders![attachment.type!]!(
-        context,
-        attachment,
+  // Default callback for removing an attachment.
+  Future<void> _onAttachmentRemovePressed(Attachment attachment) async {
+    final file = attachment.file;
+    final uploadState = attachment.uploadState;
+
+    if (file != null && !uploadState.isSuccess && !isWeb) {
+      await StreamAttachmentHandler.instance.deleteAttachmentFile(
+        attachmentFile: file,
       );
     }
 
-    switch (attachment.type) {
-      case 'image':
-      case 'giphy':
-        return attachment.file != null
-            ? Image.memory(
-                attachment.file!.bytes!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, _, __) => Image.asset(
-                  'images/placeholder.png',
-                  package: 'stream_chat_flutter',
-                ),
-              )
-            : CachedNetworkImage(
-                imageUrl: attachment.imageUrl ??
-                    attachment.assetUrl ??
-                    attachment.thumbUrl!,
-                fit: BoxFit.cover,
-                errorWidget: (_, obj, trace) =>
-                    getFileTypeImage(attachment.extraData['other'] as String?),
-                placeholder: (context, _) => Shimmer.fromColors(
-                  baseColor: _streamChatTheme.colorTheme.disabled,
-                  highlightColor: _streamChatTheme.colorTheme.inputBg,
-                  child: Image.asset(
-                    'images/placeholder.png',
-                    fit: BoxFit.cover,
-                    package: 'stream_chat_flutter',
-                  ),
-                ),
-              );
-      case 'video':
-        return Stack(
-          children: [
-            StreamVideoThumbnailImage(
-              constraints: BoxConstraints.loose(
-                const Size(
-                  104,
-                  104,
-                ),
-              ),
-              video: attachment.file?.path ?? attachment.assetUrl,
-            ),
-            Positioned(
-              left: 8,
-              bottom: 10,
-              child: SvgPicture.asset(
-                'svgs/video_call_icon.svg',
-                package: 'stream_chat_flutter',
-              ),
-            ),
-          ],
-        );
-      default:
-        return const ColoredBox(
-          color: Colors.black26,
-          child: Icon(Icons.insert_drive_file),
-        );
-    }
+    _effectiveController.removeAttachmentById(attachment.id);
   }
 
   Widget _buildCommandButton(BuildContext context) {
@@ -1273,10 +1330,10 @@ class StreamMessageInputState extends State<StreamMessageInput>
     }
 
     final streamChannel = StreamChannel.of(context);
+    final channel = streamChannel.channel;
     var message = _effectiveController.value;
 
-    if (!streamChannel.channel.ownCapabilities
-            .contains(PermissionType.sendLinks) &&
+    if (!channel.ownCapabilities.contains(PermissionType.sendLinks) &&
         _urlRegex.allMatches(message.text ?? '').any((element) =>
             element.group(0)?.split('.').last.isValidTLD() == true)) {
       showInfoBottomSheet(
@@ -1302,8 +1359,8 @@ class StreamMessageInputState extends State<StreamMessageInput>
     final skipEnrichUrl = _effectiveController.ogAttachment == null;
 
     var shouldKeepFocus = widget.shouldKeepFocusAfterMessage;
-
     shouldKeepFocus ??= !_commandEnabled;
+
     widget.onQuotedMessageCleared?.call();
 
     _effectiveController.reset();
@@ -1312,12 +1369,35 @@ class StreamMessageInputState extends State<StreamMessageInput>
       message = await widget.preMessageSending!(message);
     }
 
-    final channel = streamChannel.channel;
+    message = message.replaceMentionsWithId();
+
+    // If the channel is not up to date, we should reload it before sending
+    // the message.
     if (!channel.state!.isUpToDate) {
       await streamChannel.reloadChannel();
+
+      // We need to wait for the frame to be rendered with the updated channel
+      // state before sending the message.
+      await WidgetsBinding.instance.endOfFrame;
     }
 
-    message = message.replaceMentionsWithId();
+    await _sendOrUpdateMessage(
+      message: message,
+      skipEnrichUrl: skipEnrichUrl,
+    );
+
+    if (shouldKeepFocus) {
+      FocusScope.of(context).requestFocus(_effectiveFocusNode);
+    } else {
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  Future<void> _sendOrUpdateMessage({
+    required Message message,
+    bool skipEnrichUrl = false,
+  }) async {
+    final channel = StreamChannel.of(context).channel;
 
     try {
       Future sendingFuture;
@@ -1331,12 +1411,6 @@ class StreamMessageInputState extends State<StreamMessageInput>
           message,
           skipEnrichUrl: skipEnrichUrl,
         );
-      }
-
-      if (shouldKeepFocus) {
-        FocusScope.of(context).requestFocus(_effectiveFocusNode);
-      } else {
-        FocusScope.of(context).unfocus();
       }
 
       final resp = await sendingFuture;

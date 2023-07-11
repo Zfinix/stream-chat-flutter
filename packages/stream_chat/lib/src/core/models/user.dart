@@ -35,8 +35,8 @@ class User extends Equatable {
     this.role,
     String? name,
     String? image,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    this.createdAt,
+    this.updatedAt,
     this.lastActive,
     Map<String, Object?> extraData = const {},
     this.online = false,
@@ -44,8 +44,7 @@ class User extends Equatable {
     this.banExpires,
     this.teams = const [],
     this.language,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now(),
+  }) :
         // For backwards compatibility, set 'name', 'image' in [extraData].
         extraData = {
           ...extraData,
@@ -79,7 +78,7 @@ class User extends Equatable {
   /// Shortcut for user name.
   ///
   /// {@macro name}
-  @JsonKey(ignore: true)
+  @JsonKey(includeToJson: false, includeFromJson: false)
   String get name {
     if (extraData.containsKey('name') && extraData['name'] != null) {
       final name = extraData['name']! as String;
@@ -91,48 +90,39 @@ class User extends Equatable {
   /// Shortcut for user image.
   ///
   /// {@macro image}
-  @JsonKey(ignore: true)
+  @JsonKey(includeToJson: false, includeFromJson: false)
   String? get image => extraData['image'] as String?;
 
   /// User role.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final String? role;
 
   /// User teams
-  @JsonKey(
-    includeIfNull: false,
-    toJson: Serializer.readOnly,
-  )
+  @JsonKey(includeToJson: false)
   final List<String> teams;
 
   /// Date of user creation.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
-  final DateTime createdAt;
+  @JsonKey(includeToJson: false)
+  final DateTime? createdAt;
 
   /// Date of last user update.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
-  final DateTime updatedAt;
+  @JsonKey(includeToJson: false)
+  final DateTime? updatedAt;
 
   /// Date of last user connection.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final DateTime? lastActive;
 
   /// True if user is online.
-  @JsonKey(
-    includeIfNull: false,
-    toJson: Serializer.readOnly,
-  )
+  @JsonKey(includeToJson: false)
   final bool online;
 
   /// True if user is banned from the chat.
-  @JsonKey(
-    includeIfNull: false,
-    toJson: Serializer.readOnly,
-  )
+  @JsonKey(includeToJson: false)
   final bool banned;
 
   /// The date at which the ban will expire.
-  @JsonKey(includeIfNull: false, toJson: Serializer.readOnly)
+  @JsonKey(includeToJson: false)
   final DateTime? banExpires;
 
   /// The language this user prefers.
@@ -140,7 +130,6 @@ class User extends Equatable {
   final String? language;
 
   /// Map of custom user extraData.
-  @JsonKey(includeIfNull: false)
   final Map<String, Object?> extraData;
 
   /// List of users to list of userIds.

@@ -91,10 +91,10 @@ void main() {
       );
 
       const errorMessage = 'Error! Error! Error!';
-      final error = DioError(
-        type: DioErrorType.response,
-        error: errorMessage,
-        requestOptions: RequestOptions(path: ''),
+      final error = DioException(
+        type: DioExceptionType.badResponse,
+        message: errorMessage,
+        requestOptions: RequestOptions(),
       );
       when(() => mockChannel.initialized)
           .thenAnswer((_) => Future.error(error));

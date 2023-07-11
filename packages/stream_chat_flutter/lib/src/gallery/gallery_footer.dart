@@ -1,12 +1,10 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:stream_chat_flutter/src/video/video_thumbnail_image.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// {@template streamGalleryFooter}
@@ -61,6 +59,7 @@ class StreamGalleryFooter extends StatefulWidget
 
 class _StreamGalleryFooterState extends State<StreamGalleryFooter> {
   final shareButtonKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     const showShareButton = !kIsWeb;
@@ -108,12 +107,19 @@ class _StreamGalleryFooterState extends State<StreamGalleryFooter> {
                     await file.writeAsBytes(bytes);
                     final box =
                         shareButtonKey.currentContext?.findRenderObject();
+                    final size = shareButtonKey.currentContext?.size;
+
                     final position =
                         (box! as RenderBox).localToGlobal(Offset.zero);
+
                     await Share.shareXFiles(
                       [XFile(filePath)],
-                      sharePositionOrigin:
-                          Rect.fromLTWH(position.dx, position.dy, 0, 0),
+                      sharePositionOrigin: Rect.fromLTWH(
+                        position.dx,
+                        position.dy,
+                        size?.width ?? 50,
+                        (size?.height ?? 2) / 2,
+                      ),
                     );
                   },
                 ),

@@ -25,12 +25,13 @@ class StreamHttpClient {
     TokenManager? tokenManager,
     ConnectionIdManager? connectionIdManager,
     Logger? logger,
+    Iterable<Interceptor>? interceptors,
   })  : _options = options ?? const StreamHttpClientOptions(),
         httpClient = dio ?? Dio() {
     httpClient
       ..options.baseUrl = _options.baseUrl
-      ..options.receiveTimeout = _options.receiveTimeout.inMilliseconds
-      ..options.connectTimeout = _options.connectTimeout.inMilliseconds
+      ..options.receiveTimeout = _options.receiveTimeout
+      ..options.connectTimeout = _options.connectTimeout
       ..options.queryParameters = {
         'api_key': apiKey,
         ..._options.queryParameters,
@@ -45,20 +46,25 @@ class StreamHttpClient {
         if (tokenManager != null) AuthInterceptor(this, tokenManager),
         if (connectionIdManager != null)
           ConnectionIdInterceptor(connectionIdManager),
-        if (logger != null && logger.level != Level.OFF)
-          LoggingInterceptor(
-            requestHeader: true,
-            logPrint: (step, message) {
-              switch (step) {
-                case InterceptStep.request:
-                  return logger.info(message);
-                case InterceptStep.response:
-                  return logger.info(message);
-                case InterceptStep.error:
-                  return logger.severe(message);
-              }
-            },
-          ),
+        ...interceptors ??
+            [
+              // Add a default logging interceptor if no interceptors are
+              // provided.
+              if (logger != null && logger.level != Level.OFF)
+                LoggingInterceptor(
+                  requestHeader: true,
+                  logPrint: (step, message) {
+                    switch (step) {
+                      case InterceptStep.request:
+                        return logger.info(message);
+                      case InterceptStep.response:
+                        return logger.info(message);
+                      case InterceptStep.error:
+                        return logger.severe(message);
+                    }
+                  },
+                ),
+            ],
       ]);
   }
 
@@ -86,16 +92,16 @@ class StreamHttpClient {
   /// calling [close] will throw an exception.
   void close({bool force = false}) => httpClient.close(force: force);
 
-  StreamChatNetworkError _parseError(DioError err) {
+  StreamChatNetworkError _parseError(DioException exception) {
     StreamChatNetworkError error;
     // locally thrown dio error
-    if (err is StreamChatDioError) {
-      error = err.error;
+    if (exception is StreamChatDioError) {
+      error = exception.error;
     } else {
       // real network request dio error
-      error = StreamChatNetworkError.fromDioError(err);
+      error = StreamChatNetworkError.fromDioException(exception);
     }
-    return error..stackTrace = err.stackTrace;
+    return error..stackTrace = exception.stackTrace;
   }
 
   /// Handy method to make http GET request with error parsing.
@@ -115,7 +121,7 @@ class StreamHttpClient {
         cancelToken: cancelToken,
       );
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }
@@ -141,7 +147,7 @@ class StreamHttpClient {
         cancelToken: cancelToken,
       );
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }
@@ -161,7 +167,7 @@ class StreamHttpClient {
         cancelToken: cancelToken,
       );
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }
@@ -187,7 +193,7 @@ class StreamHttpClient {
         cancelToken: cancelToken,
       );
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }
@@ -213,7 +219,7 @@ class StreamHttpClient {
         cancelToken: cancelToken,
       );
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }
@@ -262,7 +268,7 @@ class StreamHttpClient {
         cancelToken: cancelToken,
       );
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }
@@ -275,7 +281,7 @@ class StreamHttpClient {
     try {
       final response = await httpClient.fetch<T>(requestOptions);
       return response;
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       throw _parseError(error);
     }
   }

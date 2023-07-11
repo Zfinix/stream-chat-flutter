@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// ignore_for_file: lines_longer_than_80_chars
-
 import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
@@ -15,28 +13,19 @@ import 'package:flutter/widgets.dart';
 /// Version of [Viewport] with some modifications to how extents are
 /// computed to allow scroll extents outside 0 to 1.  See [Viewport]
 /// for more information.
-/// description
+/// {@endtemplate}
 class UnboundedViewport extends Viewport {
   /// {@macro unbounded_viewport}
   UnboundedViewport({
-    Key? key,
-    AxisDirection axisDirection = AxisDirection.down,
-    AxisDirection? crossAxisDirection,
+    super.key,
+    super.axisDirection,
+    super.crossAxisDirection,
     double anchor = 0.0,
-    required ViewportOffset offset,
-    Key? center,
-    double? cacheExtent,
-    List<Widget> slivers = const <Widget>[],
-  })  : _anchor = anchor,
-        super(
-          key: key,
-          axisDirection: axisDirection,
-          crossAxisDirection: crossAxisDirection,
-          offset: offset,
-          center: center,
-          cacheExtent: cacheExtent,
-          slivers: slivers,
-        );
+    required super.offset,
+    super.center,
+    super.cacheExtent,
+    super.slivers,
+  }) : _anchor = anchor;
 
   // [Viewport] enforces constraints on [Viewport.anchor], so we need our own
   // version.
@@ -46,15 +35,16 @@ class UnboundedViewport extends Viewport {
   double get anchor => _anchor;
 
   @override
-  RenderViewport createRenderObject(BuildContext context) =>
-      UnboundedRenderViewport(
-        axisDirection: axisDirection,
-        crossAxisDirection: crossAxisDirection ??
-            Viewport.getDefaultCrossAxisDirection(context, axisDirection),
-        anchor: anchor,
-        offset: offset,
-        cacheExtent: cacheExtent,
-      );
+  RenderViewport createRenderObject(BuildContext context) {
+    return UnboundedRenderViewport(
+      axisDirection: axisDirection,
+      crossAxisDirection: crossAxisDirection ??
+          Viewport.getDefaultCrossAxisDirection(context, axisDirection),
+      anchor: anchor,
+      offset: offset,
+      cacheExtent: cacheExtent,
+    );
+  }
 }
 
 /// A render object that is bigger on the inside.
@@ -68,22 +58,14 @@ class UnboundedViewport extends Viewport {
 class UnboundedRenderViewport extends RenderViewport {
   /// Creates a viewport for [RenderSliver] objects.
   UnboundedRenderViewport({
-    AxisDirection axisDirection = AxisDirection.down,
-    required AxisDirection crossAxisDirection,
-    required ViewportOffset offset,
+    super.axisDirection,
+    required super.crossAxisDirection,
+    required super.offset,
     double anchor = 0.0,
-    List<RenderSliver>? children,
-    RenderSliver? center,
-    double? cacheExtent,
-  })  : _anchor = anchor,
-        super(
-          axisDirection: axisDirection,
-          crossAxisDirection: crossAxisDirection,
-          offset: offset,
-          center: center,
-          cacheExtent: cacheExtent,
-          children: children,
-        );
+    super.children,
+    super.center,
+    super.cacheExtent,
+  }) : _anchor = anchor;
 
   static const int _maxLayoutCycles = 10;
 
@@ -154,14 +136,20 @@ class UnboundedRenderViewport extends RenderViewport {
   @override
   void performLayout() {
     if (center == null) {
-      assert(firstChild == null, 'firstChild cannot be null');
+      assert(
+        firstChild == null,
+        'A RenderViewport with no center render object must have no children.',
+      );
       _minScrollExtent = 0.0;
       _maxScrollExtent = 0.0;
       _hasVisualOverflow = false;
       offset.applyContentDimensions(0, 0);
       return;
     }
-    assert(center!.parent == this, 'center.parent cannot be equal to this');
+    assert(
+      center!.parent == this,
+      '''The "center" property of a RenderViewport must be a child of the viewport.''',
+    );
 
     late double mainAxisExtent;
     late double crossAxisExtent;
@@ -203,7 +191,7 @@ class UnboundedRenderViewport extends RenderViewport {
     } while (count < _maxLayoutCycles);
     assert(() {
       if (count >= _maxLayoutCycles) {
-        assert(count != 1, 'count not equal to 1');
+        assert(count != 1);
         throw FlutterError(
           'A RenderViewport exceeded its maximum number of layout cycles.\n'
           'RenderViewport render objects, during layout, can retry if either their '
@@ -224,7 +212,7 @@ class UnboundedRenderViewport extends RenderViewport {
         );
       }
       return true;
-    }(), 'count needs to be bigger than _maxLayoutCycles');
+    }());
   }
 
   double _attemptLayout(
@@ -232,11 +220,11 @@ class UnboundedRenderViewport extends RenderViewport {
     double crossAxisExtent,
     double correctedOffset,
   ) {
-    assert(!mainAxisExtent.isNaN, 'assert mainAxisExtent.isNaN');
-    assert(mainAxisExtent >= 0.0, 'assert mainAxisExtent >= 0.0');
-    assert(crossAxisExtent.isFinite, 'assert crossAxisExtent.isFinite');
-    assert(crossAxisExtent >= 0.0, 'assert crossAxisExtent >= 0.0');
-    assert(correctedOffset.isFinite, 'assert correctedOffset.isFinite');
+    assert(!mainAxisExtent.isNaN, 'The main axis extent cannot be NaN.');
+    assert(mainAxisExtent >= 0.0, 'The main axis extent cannot be negative.');
+    assert(crossAxisExtent.isFinite, 'The cross axis extent must be finite.');
+    assert(crossAxisExtent >= 0.0, 'The cross axis extent cannot be negative.');
+    assert(correctedOffset.isFinite, 'The corrected offset must be finite.');
     _minScrollExtent = 0.0;
     _maxScrollExtent = 0.0;
     _hasVisualOverflow = false;

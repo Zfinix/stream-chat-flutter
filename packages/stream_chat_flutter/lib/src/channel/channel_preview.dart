@@ -6,6 +6,7 @@ import 'package:contextmenu/contextmenu.dart';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/src/context_menu_items/stream_chat_context_menu_item.dart';
 import 'package:stream_chat_flutter/src/dialogs/dialogs.dart';
+import 'package:stream_chat_flutter/src/message_widget/sending_indicator_builder.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// {@template channelPreview}
@@ -23,6 +24,7 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 /// The UI is rendered based on the first ancestor of type [StreamChatTheme].
 /// Modify it to change the widget's appearance.
 /// {@endtemplate}
+@Deprecated('Use StreamChannelListTile instead.')
 class ChannelPreview extends StatelessWidget {
   /// {@macro channelPreview}
   const ChannelPreview({
@@ -76,6 +78,7 @@ class ChannelPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final channelPreviewTheme = StreamChannelPreviewTheme.of(context);
     final streamChatState = StreamChat.of(context);
+    final streamChatTheme = StreamChatTheme.of(context);
     return BetterStreamBuilder<bool>(
       stream: channel.isMutedStream,
       initialData: channel.isMuted,
@@ -292,20 +295,20 @@ class ChannelPreview extends StatelessWidget {
                               stream: channel.state?.readStream,
                               initialData: channel.state?.read,
                               builder: (context, data) {
-                                final readList = data.where((it) =>
-                                    it.user.id !=
-                                        channel.client.state.currentUser?.id &&
-                                    (it.lastRead
-                                            .isAfter(lastMessage!.createdAt) ||
-                                        it.lastRead.isAtSameMomentAs(
-                                          lastMessage.createdAt,
-                                        )));
-                                final isMessageRead = readList.length >=
-                                    (channel.memberCount ?? 0) - 1;
-                                return StreamSendingIndicator(
-                                  message: lastMessage!,
-                                  size: channelPreviewTheme.indicatorIconSize,
-                                  isMessageRead: isMessageRead,
+                                final hasNonUrlAttachments = lastMessage!
+                                    .attachments
+                                    .where((it) =>
+                                        it.titleLink == null ||
+                                        it.type == 'giphy')
+                                    .isNotEmpty;
+
+                                return SendingIndicatorBuilder(
+                                  messageTheme: streamChatTheme.ownMessageTheme,
+                                  message: lastMessage,
+                                  hasNonUrlAttachments: hasNonUrlAttachments,
+                                  streamChat: streamChatState,
+                                  streamChatTheme: streamChatTheme,
+                                  channel: channel,
                                 );
                               },
                             ),
@@ -346,16 +349,16 @@ class _Date extends StatelessWidget {
 
         if (lastMessageAt.millisecondsSinceEpoch >=
             startOfDay.millisecondsSinceEpoch) {
-          stringDate = Jiffy(lastMessageAt.toLocal()).jm;
+          stringDate = Jiffy.parseFromDateTime(lastMessageAt.toLocal()).jm;
         } else if (lastMessageAt.millisecondsSinceEpoch >=
             startOfDay
                 .subtract(const Duration(days: 1))
                 .millisecondsSinceEpoch) {
           stringDate = context.translations.yesterdayLabel;
         } else if (startOfDay.difference(lastMessageAt).inDays < 7) {
-          stringDate = Jiffy(lastMessageAt.toLocal()).EEEE;
+          stringDate = Jiffy.parseFromDateTime(lastMessageAt.toLocal()).EEEE;
         } else {
-          stringDate = Jiffy(lastMessageAt.toLocal()).yMd;
+          stringDate = Jiffy.parseFromDateTime(lastMessageAt.toLocal()).yMd;
         }
 
         return Text(

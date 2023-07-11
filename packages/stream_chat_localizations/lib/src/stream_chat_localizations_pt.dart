@@ -15,6 +15,9 @@ class StreamChatLocalizationsPt extends GlobalStreamChatLocalizations {
   String get noUsersLabel => 'Nenhum usuário atualmente';
 
   @override
+  String get noPhotoOrVideoLabel => 'Não há fotos ou vídeos';
+
+  @override
   String get retryLabel => 'Tente novamente';
 
   @override
@@ -66,7 +69,8 @@ class StreamChatLocalizationsPt extends GlobalStreamChatLocalizations {
   String get genericErrorText => 'Ocorreu um problema';
 
   @override
-  String get loadingMessagesError => 'Ocorreu um problema ao carregar mensagem';
+  String get loadingMessagesError =>
+      'Ocorreu um problema ao carregar a mensagem';
 
   @override
   String resultCountText(int count) => '$count resultados';
@@ -158,7 +162,7 @@ class StreamChatLocalizationsPt extends GlobalStreamChatLocalizations {
 
   @override
   String get enablePhotoAndVideoAccessMessage =>
-      'Por favor, permita o acesso a suas fotos'
+      'Por favor, permita o acesso às suas fotos'
       '\ne vídeos para que possa compartilhar com sua rede.';
 
   @override
@@ -240,13 +244,15 @@ class StreamChatLocalizationsPt extends GlobalStreamChatLocalizations {
     } else if (date == yesterday) {
       return 'Ontem';
     } else {
-      return 'o ${Jiffy(date).MMMd}';
+      return 'o ${Jiffy.parseFromDateTime(date).MMMd}';
     }
   }
 
   @override
-  String sentAtText({required DateTime date, required DateTime time}) =>
-      '''Enviado ${_getDay(date)} às ${Jiffy(time.toLocal()).format('HH:mm')}''';
+  String sentAtText({required DateTime date, required DateTime time}) {
+    final atTime = Jiffy.parseFromDateTime(time.toLocal());
+    return 'Enviado ${_getDay(date)} às ${atTime.jm}';
+  }
 
   @override
   String get todayLabel => 'Hoje';
@@ -434,12 +440,7 @@ Não é possível adicionar mais de $limit arquivos de uma vez
   String get viewLibrary => 'Ver biblioteca';
 
   @override
-  String unreadMessagesSeparatorText(int unreadCount) {
-    if (unreadCount == 1) {
-      return '1 mensagem não lida';
-    }
-    return '$unreadCount mensagens não lidas';
-  }
+  String unreadMessagesSeparatorText(int unreadCount) => 'Novas mensagens';
 
   @override
   String get enableFileAccessMessage =>

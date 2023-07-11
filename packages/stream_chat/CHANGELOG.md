@@ -1,3 +1,107 @@
+## Upcoming
+
+🔄 Changed
+
+- Updated minimum supported `SDK` version to Dart 2.18
+
+## 6.4.0
+
+🐞 Fixed
+
+- [[#1293]](https://github.com/GetStream/stream-chat-flutter/issues/1293) Fixed wrong message order when sending
+  messages quickly.
+- [[#1612]](https://github.com/GetStream/stream-chat-flutter/issues/1612) Fixed `Channel.isMutedStream` does not emit
+  when channel mute expires.
+
+## 6.3.0
+
+🐞 Fixed
+
+- [[#1585]](https://github.com/GetStream/stream-chat-flutter/issues/1585) Fixed channels left not being removed from
+  the persistent storage.
+
+🔄 Changed
+
+- Updated `dio` dependency to `^5.2.0`.
+
+## 6.2.0
+
+🐞 Fixed
+
+- [[#1422]](https://github.com/GetStream/stream-chat-flutter/issues/1422) Fixed `User.createdAt` property using
+  currentTime when the ws connection is not established.
+
+✅ Added
+
+- Added support for `ChatPersistenceClient.isConnected` for checking if the client is connected to the database.
+- Added support for `ChatPersistenceClient.userId` for getting the current connected user id.
+- Added two new methods `ChatPersistenceClient.disconnect` and `ChatPersistenceClient.connect` for disconnecting and
+  connecting to the database.
+
+## 6.1.0
+
+🐞 Fixed
+
+- [[#1355]](https://github.com/GetStream/stream-chat-flutter/issues/1355) Fixed error while hiding channel and clearing
+  message history.
+- [[#1525]](https://github.com/GetStream/stream-chat-flutter/issues/1525) Fixed removing message not removing quoted
+  message reference.
+
+✅ Added
+
+- Expose `ChannelMute` class. [#1473](https://github.com/GetStream/stream-chat-flutter/issues/1473)
+- Added synchronization to the `StreamChatClient.sync`
+  api. [#1392](https://github.com/GetStream/stream-chat-flutter/issues/1392)
+- Added support for `StreamChatClient.chatApiInterceptors` to add custom interceptors to the API client.
+  [#1265](https://github.com/GetStream/stream-chat-flutter/issues/1265).
+
+  ```dart
+    final client = StreamChatClient(
+      chatApiInterceptors: [
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            // Do something before request is sent.
+            return handler.next(options);
+          },
+          onResponse: (response, handler) {
+            // Do something with response data
+            return handler.next(response);
+          },
+          onError: (DioError e, handler) {
+            // Do something with response error
+            return handler.next(e);
+          },
+        ),
+      ],
+  );
+  ```
+
+🔄 Changed
+
+- Updated `dart` sdk environment range to support `3.0.0`.
+
+## 6.0.0
+
+🐞 Fixed
+
+- Fixed streamWatchers. Before it was always new, now it is possible to follow the watchers of a channel.
+- Make `Message.i18n` field read-only.
+
+🔄 Changed
+
+- Cancelling a attachment upload now removes the attachment from the message.
+- Updated `dio` and other dependencies to resolvable versions.
+
+✅ Added
+
+- Added `presence` property to `Channel::watch` method.
+
+## 5.3.0
+
+🔄 Changed
+
+- Updated `rate_limiter` dependency to `^1.0.0`
+
 ## 5.2.0
 
 ✅ Added
@@ -27,7 +131,7 @@
 🛑️ Breaking Changes from `5.0.0-beta.2`
 
 - `Channel.addMembers`, `Channel.removeMembers`, `Channel.inviteMembers` and `Channel.update`
-  positional params are now optional params.
+  positional parameters are now optional parameters.
 
   ```dart
     // previous
@@ -400,21 +504,21 @@ the [V4 Migration Guide](https://getstream.io/chat/docs/sdk/flutter/guides/migra
 🛑️ Breaking Changes from `1.5.3`
 
 - migrate this package to null safety
-- `ConnectUserWithProvider` now requires `tokenProvider` as a required param. (Removed from the
+- `ConnectUserWithProvider` now requires `tokenProvider` as a required parameter. (Removed from the
   constructor)
 - `client.disconnect()` is now divided into two different functions
-    - `client.closeConnection()` -> for closing user websocket connection.
+    - `client.closeConnection()` -> for closing user web socket connection.
     - `client.disconnectUser()` -> for disconnecting user and resetting client state.
 - `client.devToken()` now returns a `Token` model instead of `String`.
 - `ApiError` is removed in favor of `StreamChatError`
     - `StreamChatError` -> parent type for all the stream errors.
-    - `StreamWebSocketError` -> for user websocket related errors.
+    - `StreamWebSocketError` -> for user web socket related errors.
     - `StreamChatNetworkError` -> for network related errors.
-- `client.queryChannels()`, `channel.query()` options param is removed in favor of individual params
+- `client.queryChannels()`, `channel.query()` options parameter is removed in favor of individual parameters
     - `option.state` -> bool state
     - `option.watch` -> bool watch
     - `option.presence` -> bool presence
-- `client.queryUsers()` options param is removed in favor of individual params
+- `client.queryUsers()` options parameter is removed in favor of individual parameters
     - `option.presence` -> bool presence
 - Migrate this package to null safety
 - Added typed filters
@@ -448,28 +552,28 @@ the [V4 Migration Guide](https://getstream.io/chat/docs/sdk/flutter/guides/migra
 
 🛑️ Breaking Changes from `2.0.0-nullsafety.6`
 
-- `ConnectUserWithProvider` now requires `tokenProvider` as a required param. (Removed from the
+- `ConnectUserWithProvider` now requires `tokenProvider` as a required parameter. (Removed from the
   constructor)
 - `client.disconnect()` is now divided into two different functions
-    - `client.closeConnection()` -> for closing user websocket connection.
+    - `client.closeConnection()` -> for closing user web socket connection.
     - `client.disconnectUser()` -> for disconnecting user and resetting client state.
 - `client.devToken()` now returns a `Token` model instead of `String`.
 - `ApiError` is removed in favor of `StreamChatError`
     - `StreamChatError` -> parent type for all the stream errors.
-    - `StreamWebSocketError` -> for user websocket related errors.
+    - `StreamWebSocketError` -> for user web socket related errors.
     - `StreamChatNetworkError` -> for network related errors.
-- `client.queryChannels()`, `channel.query()` options param is removed in favor of individual params
+- `client.queryChannels()`, `channel.query()` options parameter is removed in favor of individual parameters
     - `option.state` -> bool state
     - `option.watch` -> bool watch
     - `option.presence` -> bool presence
-- `client.queryUsers()` options param is removed in favor of individual params
+- `client.queryUsers()` options parameter is removed in favor of individual parameters
     - `option.presence` -> bool presence
 
 ✅ Added
 
 - New `Location` enum is introduced for easily changing the client location/baseUrl.
 - New `client.openConnection()` and `client.closeConnection()` is introduced to connect/disconnect
-  user ws connection.
+  user WS connection.
 
 🔄 Changed
 
@@ -572,7 +676,7 @@ the [V4 Migration Guide](https://getstream.io/chat/docs/sdk/flutter/guides/migra
 
 - 🛑 **BREAKING** Renamed `Client` to less generic `StreamChatClient`
 - 🛑 **BREAKING** Segregated the persistence layer into separate
-  package [stream_chat_persistence](https://pub.dev/packages/stream_chat_persistence)
+  package [`stream_chat_persistence`](https://pub.dev/packages/stream_chat_persistence)
 - 🛑 **BREAKING** Moved `Client.backgroundKeepAlive`
   to [core package](https://pub.dev/packages/stream_chat_core)
 - 🛑 **BREAKING** Moved `Client.showLocalNotification`

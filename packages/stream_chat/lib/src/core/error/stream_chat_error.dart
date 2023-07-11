@@ -74,6 +74,7 @@ class StreamChatNetworkError extends StreamChatError {
     ChatErrorCode errorCode, {
     int? statusCode,
     this.data,
+    this.isRequestCancelledError = false,
   })  : code = errorCode.code,
         statusCode = statusCode ?? data?.statusCode,
         super(errorCode.message);
@@ -84,11 +85,17 @@ class StreamChatNetworkError extends StreamChatError {
     required String message,
     this.statusCode,
     this.data,
+    this.isRequestCancelledError = false,
   }) : super(message);
 
   ///
-  factory StreamChatNetworkError.fromDioError(DioError error) {
-    final response = error.response;
+  @Deprecated('Use `StreamChatNetworkError.fromDioException` instead')
+  factory StreamChatNetworkError.fromDioError(DioException error) =
+      StreamChatNetworkError.fromDioException;
+
+  ///
+  factory StreamChatNetworkError.fromDioException(DioException exception) {
+    final response = exception.response;
     ErrorResponse? errorResponse;
     final data = response?.data;
     if (data != null) {
@@ -96,11 +103,14 @@ class StreamChatNetworkError extends StreamChatError {
     }
     return StreamChatNetworkError.raw(
       code: errorResponse?.code ?? -1,
-      message:
-          errorResponse?.message ?? response?.statusMessage ?? error.message,
+      message: errorResponse?.message ??
+          response?.statusMessage ??
+          exception.message ??
+          '',
       statusCode: errorResponse?.statusCode ?? response?.statusCode,
       data: errorResponse,
-    )..stackTrace = error.stackTrace;
+      isRequestCancelledError: exception.type == DioExceptionType.cancel,
+    )..stackTrace = exception.stackTrace;
   }
 
   /// Error code
@@ -111,6 +121,9 @@ class StreamChatNetworkError extends StreamChatError {
 
   /// Response body. please refer to [ErrorResponse].
   final ErrorResponse? data;
+
+  /// True, in case the error is due to a cancelled network request.
+  final bool isRequestCancelledError;
 
   StackTrace? _stackTrace;
 

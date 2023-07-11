@@ -39,6 +39,9 @@ class NnStreamChatLocalizations extends GlobalStreamChatLocalizations {
   String get noUsersLabel => 'There are no users currently';
 
   @override
+  String get noPhotoOrVideoLabel => 'There is no photo or video';
+
+  @override
   String get retryLabel => 'Retry';
 
   @override
@@ -267,13 +270,15 @@ class NnStreamChatLocalizations extends GlobalStreamChatLocalizations {
     } else if (date == yesterday) {
       return 'yesterday';
     } else {
-      return 'on ${Jiffy(date).MMMd}';
+      return 'on ${Jiffy.parseFromDateTime(date).MMMd}';
     }
   }
 
   @override
-  String sentAtText({required DateTime date, required DateTime time}) =>
-      'Sent ${_getDay(date)} at ${Jiffy(time.toLocal()).format('HH:mm')}';
+  String sentAtText({required DateTime date, required DateTime time}) {
+    final atTime = Jiffy.parseFromDateTime(time.toLocal());
+    return 'Sent ${_getDay(date)} at ${atTime.jm}';
+  }
 
   @override
   String get todayLabel => 'Today';
@@ -456,12 +461,7 @@ class NnStreamChatLocalizations extends GlobalStreamChatLocalizations {
   String get viewLibrary => 'View library';
 
   @override
-  String unreadMessagesSeparatorText(int unreadCount) {
-    if (unreadCount == 1) {
-      return '1 unread message';
-    }
-    return '$unreadCount unread messages';
-  }
+  String unreadMessagesSeparatorText(int unreadCount) => 'New messages';
 
   @override
   String get enableFileAccessMessage => 'Enable file access to continue';
@@ -579,10 +579,10 @@ class ChannelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const StreamChannelHeader(),
+    return const Scaffold(
+      appBar: StreamChannelHeader(),
       body: Column(
-        children: const <Widget>[
+        children: <Widget>[
           Expanded(
             child: StreamMessageListView(),
           ),

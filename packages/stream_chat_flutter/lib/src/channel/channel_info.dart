@@ -106,9 +106,10 @@ class _ConnectedTitleState extends StatelessWidget {
             style: textStyle,
           );
         } else {
+          final lastActive = otherMember.user?.lastActive ?? DateTime.now();
           alternativeWidget = Text(
             '${context.translations.userLastOnlineText} '
-            '${Jiffy(otherMember.user?.lastActive).fromNow()}',
+            '${Jiffy.parseFromDateTime(lastActive).fromNow()}',
             style: textStyle,
           );
         }
@@ -143,7 +144,7 @@ class _ConnectingTitleState extends StatelessWidget {
           height: 16,
           width: 16,
           child: Center(
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator.adaptive(),
           ),
         ),
         const SizedBox(width: 10),

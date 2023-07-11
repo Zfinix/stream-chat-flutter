@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// {@template streamUrlAttachment}
@@ -36,8 +37,6 @@ class StreamUrlAttachment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chatThemeData = StreamChatTheme.of(context);
-
     return ConstrainedBox(
       constraints: const BoxConstraints(
         maxWidth: 400,
@@ -66,32 +65,50 @@ class StreamUrlAttachment extends StatelessWidget {
                   ),
                   child: Stack(
                     children: [
-                      CachedNetworkImage(
-                        width: double.infinity,
-                        imageUrl: urlAttachment.imageUrl!,
-                        fit: BoxFit.cover,
+                      AspectRatio(
+                        // Default aspect ratio for Open Graph images.
+                        // https://www.kapwing.com/resources/what-is-an-og-image-make-and-format-og-images-for-your-blog-or-webpage
+                        aspectRatio: 1.91 / 1,
+                        child: CachedNetworkImage(
+                          imageUrl: urlAttachment.imageUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, __) {
+                            final image = Image.asset(
+                              'images/placeholder.png',
+                              fit: BoxFit.cover,
+                              package: 'stream_chat_flutter',
+                            );
+                            final colorTheme =
+                                StreamChatTheme.of(context).colorTheme;
+                            return Shimmer.fromColors(
+                              baseColor: colorTheme.disabled,
+                              highlightColor: colorTheme.inputBg,
+                              child: image,
+                            );
+                          },
+                          errorWidget: (_, __, ___) => const AttachmentError(),
+                        ),
                       ),
                       Positioned(
                         left: 0,
-                        bottom: -1,
+                        bottom: 0,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.only(
                               topRight: Radius.circular(16),
                             ),
-                            color: messageTheme.linkBackgroundColor,
+                            color: messageTheme.urlAttachmentBackgroundColor,
                           ),
                           child: Padding(
                             padding: const EdgeInsets.only(
                               top: 8,
                               left: 8,
-                              right: 8,
+                              right: 12,
+                              bottom: 4,
                             ),
                             child: Text(
                               hostDisplayName,
-                              style: chatThemeData.textTheme.bodyBold.copyWith(
-                                color: chatThemeData.colorTheme.accentPrimary,
-                              ),
+                              style: messageTheme.urlAttachmentHostStyle,
                             ),
                           ),
                         ),
@@ -103,22 +120,40 @@ class StreamUrlAttachment extends StatelessWidget {
                 padding: textPadding,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     if (urlAttachment.title != null)
-                      Text(
-                        urlAttachment.title!.trim(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: chatThemeData.textTheme.body
-                            .copyWith(fontWeight: FontWeight.w700),
-                      ),
+                      Builder(builder: (context) {
+                        final maxLines = messageTheme.urlAttachmentTitleMaxLine;
+
+                        TextOverflow? overflow;
+                        if (maxLines != null && maxLines > 0) {
+                          overflow = TextOverflow.ellipsis;
+                        }
+
+                        return Text(
+                          urlAttachment.title!.trim(),
+                          maxLines: maxLines,
+                          overflow: overflow,
+                          style: messageTheme.urlAttachmentTitleStyle,
+                        );
+                      }),
                     if (urlAttachment.text != null)
-                      Text(
-                        urlAttachment.text!,
-                        style: chatThemeData.textTheme.body
-                            .copyWith(fontWeight: FontWeight.w400),
-                      ),
-                  ],
+                      Builder(builder: (context) {
+                        final maxLines = messageTheme.urlAttachmentTextMaxLine;
+
+                        TextOverflow? overflow;
+                        if (maxLines != null && maxLines > 0) {
+                          overflow = TextOverflow.ellipsis;
+                        }
+
+                        return Text(
+                          urlAttachment.text!,
+                          maxLines: maxLines,
+                          overflow: overflow,
+                          style: messageTheme.urlAttachmentTextStyle,
+                        );
+                      }),
+                  ].insertBetween(const SizedBox(height: 4)),
                 ),
               ),
             ],

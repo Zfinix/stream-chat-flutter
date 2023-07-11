@@ -18,6 +18,9 @@ abstract class Translations {
   /// The label for showing no users
   String get noUsersLabel;
 
+  /// The label for showing no photo or video
+  String get noPhotoOrVideoLabel;
+
   /// The text for showing user is online
   String get userOnlineText;
 
@@ -78,7 +81,10 @@ abstract class Translations {
 
   /// The text for showing the unread messages count
   /// in the [StreamMessageListView]
-  String unreadMessagesSeparatorText(int unreadCount);
+  String unreadMessagesSeparatorText(
+    @Deprecated('unreadCount is not used anymore and will be removed ')
+    int unreadCount,
+  );
 
   /// The label for "connected" in [StreamConnectionStatusBuilder]
   String get connectedLabel;
@@ -374,6 +380,9 @@ class DefaultTranslations implements Translations {
   String get noUsersLabel => 'There are no users currently';
 
   @override
+  String get noPhotoOrVideoLabel => 'There is no photo or video';
+
+  @override
   String get retryLabel => 'Retry';
 
   @override
@@ -602,13 +611,15 @@ class DefaultTranslations implements Translations {
     } else if (date == yesterday) {
       return 'yesterday';
     } else {
-      return 'on ${Jiffy(date).MMMd}';
+      return 'on ${Jiffy.parseFromDateTime(date).MMMd}';
     }
   }
 
   @override
-  String sentAtText({required DateTime date, required DateTime time}) =>
-      'Sent ${_getDay(date)} at ${Jiffy(time.toLocal()).format('HH:mm')}';
+  String sentAtText({required DateTime date, required DateTime time}) {
+    final atTime = Jiffy.parseFromDateTime(time.toLocal());
+    return 'Sent ${_getDay(date)} at ${atTime.jm}';
+  }
 
   @override
   String get todayLabel => 'Today';
@@ -791,12 +802,7 @@ Attachment limit exceeded: it's not possible to add more than $limit attachments
   String get linkDisabledError => 'Links are disabled';
 
   @override
-  String unreadMessagesSeparatorText(int unreadCount) {
-    if (unreadCount == 1) {
-      return '1 unread message';
-    }
-    return '$unreadCount unread messages';
-  }
+  String unreadMessagesSeparatorText(int unreadCount) => 'New messages';
 
   @override
   String get enableFileAccessMessage => 'Please enable access to files'

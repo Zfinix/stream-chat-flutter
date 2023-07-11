@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/src/attachment/attachment_widget.dart';
-import 'package:stream_chat_flutter/src/video/video_thumbnail_image.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// {@template streamVideoAttachment}
@@ -17,6 +16,7 @@ class StreamVideoAttachment extends StreamAttachmentWidget {
     this.onShowMessage,
     this.onReplyMessage,
     this.onAttachmentTap,
+    this.attachmentActionsModalBuilder,
   });
 
   /// The [StreamMessageThemeData] to use for the title
@@ -30,6 +30,9 @@ class StreamVideoAttachment extends StreamAttachmentWidget {
 
   /// {@macro onAttachmentTap}
   final OnAttachmentTap? onAttachmentTap;
+
+  /// {@macro attachmentActionsBuilder}
+  final AttachmentActionsBuilder? attachmentActionsModalBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +89,8 @@ class StreamVideoAttachment extends StreamAttachmentWidget {
                               userName: message.user!.name,
                               onShowMessage: onShowMessage,
                               onReplyMessage: onReplyMessage,
+                              attachmentActionsModalBuilder:
+                                  attachmentActionsModalBuilder,
                             ),
                           ),
                         ),

@@ -21,7 +21,7 @@ void main() {
         statusCode: 200,
       );
 
-  DioError throwableError(
+  DioException throwableError(
     String path, {
     StreamChatNetworkError? error,
     bool streamChatDioError = false,
@@ -32,11 +32,11 @@ void main() {
       ..code = error?.code
       ..statusCode = error?.statusCode
       ..message = error?.message;
-    DioError? dioError;
+    DioException? dioError;
     if (streamChatDioError) {
       dioError = StreamChatDioError(error: error!, requestOptions: options);
     } else {
-      dioError = DioError(
+      dioError = DioException(
         error: error,
         requestOptions: options,
         response: Response(
@@ -86,41 +86,73 @@ void main() {
     },
   );
 
-  test('loggingInterceptor should be added if logger is provided', () {
-    const apiKey = 'api-key';
-    final client = StreamHttpClient(
-      apiKey,
-      logger: Logger('test-logger'),
-    );
+  group('loggingInterceptor', () {
+    test('should be added if logger is provided', () {
+      const apiKey = 'api-key';
+      final client = StreamHttpClient(
+        apiKey,
+        logger: Logger('test-logger'),
+      );
 
-    expect(
-      client.httpClient.interceptors.whereType<LoggingInterceptor>().length,
-      1,
-    );
-  });
+      expect(
+        client.httpClient.interceptors.whereType<LoggingInterceptor>().length,
+        1,
+      );
+    });
 
-  test('loggingInterceptor should log requests', () async {
-    const apiKey = 'api-key';
-    final logger = MockLogger();
-    final client = StreamHttpClient(apiKey, logger: logger);
+    test('should not be added if logger.level is OFF', () {
+      const apiKey = 'api-key';
+      final client = StreamHttpClient(
+        apiKey,
+        logger: Logger.detached('test-logger')..level = Level.OFF,
+      );
 
-    try {
-      await client.get('path');
-    } catch (_) {}
+      expect(
+        client.httpClient.interceptors.whereType<LoggingInterceptor>().length,
+        0,
+      );
+    });
 
-    verify(() => logger.info(any())).called(greaterThan(0));
-  });
+    test('should not be added if `interceptors` are provided', () {
+      const apiKey = 'api-key';
+      final client = StreamHttpClient(
+        apiKey,
+        logger: Logger.detached('test-logger'),
+        interceptors: [
+          // Sample Interceptor.
+          InterceptorsWrapper(),
+        ],
+      );
 
-  test('loggingInterceptor should log error', () async {
-    const apiKey = 'api-key';
-    final logger = MockLogger();
-    final client = StreamHttpClient(apiKey, logger: logger);
+      expect(
+        client.httpClient.interceptors.whereType<LoggingInterceptor>().length,
+        0,
+      );
+    });
 
-    try {
-      await client.get('path');
-    } catch (_) {}
+    test('should log requests', () async {
+      const apiKey = 'api-key';
+      final logger = MockLogger();
+      final client = StreamHttpClient(apiKey, logger: logger);
 
-    verify(() => logger.severe(any())).called(greaterThan(0));
+      try {
+        await client.get('path');
+      } catch (_) {}
+
+      verify(() => logger.info(any())).called(greaterThan(0));
+    });
+
+    test('should log error', () async {
+      const apiKey = 'api-key';
+      final logger = MockLogger();
+      final client = StreamHttpClient(apiKey, logger: logger);
+
+      try {
+        await client.get('path');
+      } catch (_) {}
+
+      verify(() => logger.severe(any())).called(greaterThan(0));
+    });
   });
 
   test('`.close` should close the dio client', () async {
@@ -129,7 +161,11 @@ void main() {
       await client.get('path');
     } on StreamChatNetworkError catch (e) {
       expect(e, isA<StreamChatNetworkError>());
-      expect(e.message, "Dio can't establish new connection after closed.");
+      expect(
+        e.message,
+        "The connection errored: Dio can't establish a new connection"
+        ' after it was closed.',
+      );
     }
   });
 
@@ -174,7 +210,7 @@ void main() {
       await client.get(path);
     } catch (e) {
       expect(e, isA<StreamChatNetworkError>());
-      expect(e, StreamChatNetworkError.fromDioError(error));
+      expect(e, StreamChatNetworkError.fromDioException(error));
     }
 
     verify(() => dio.get(
@@ -227,7 +263,7 @@ void main() {
         await client.post(path);
       } catch (e) {
         expect(e, isA<StreamChatNetworkError>());
-        expect(e, StreamChatNetworkError.fromDioError(error));
+        expect(e, StreamChatNetworkError.fromDioException(error));
       }
 
       verify(() => dio.post(
@@ -281,7 +317,7 @@ void main() {
         await client.delete(path);
       } catch (e) {
         expect(e, isA<StreamChatNetworkError>());
-        expect(e, StreamChatNetworkError.fromDioError(error));
+        expect(e, StreamChatNetworkError.fromDioException(error));
       }
 
       verify(() => dio.delete(
@@ -335,7 +371,7 @@ void main() {
         await client.patch(path);
       } catch (e) {
         expect(e, isA<StreamChatNetworkError>());
-        expect(e, StreamChatNetworkError.fromDioError(error));
+        expect(e, StreamChatNetworkError.fromDioException(error));
       }
 
       verify(() => dio.patch(
@@ -389,7 +425,7 @@ void main() {
         await client.put(path);
       } catch (e) {
         expect(e, isA<StreamChatNetworkError>());
-        expect(e, StreamChatNetworkError.fromDioError(error));
+        expect(e, StreamChatNetworkError.fromDioException(error));
       }
 
       verify(() => dio.put(
@@ -450,7 +486,7 @@ void main() {
         await client.postFile(path, file);
       } catch (e) {
         expect(e, isA<StreamChatNetworkError>());
-        expect(e, StreamChatNetworkError.fromDioError(error));
+        expect(e, StreamChatNetworkError.fromDioException(error));
       }
 
       verify(() => dio.post(

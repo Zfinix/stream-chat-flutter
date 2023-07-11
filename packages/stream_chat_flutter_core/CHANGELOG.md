@@ -1,3 +1,39 @@
+## Upcoming
+
+- Updated minimum supported `SDK` version to Flutter 3.3/Dart 2.18
+
+## 6.4.0
+
+- Updated `stream_chat` dependency to [`6.4.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 6.3.0
+
+- Updated `stream_chat` dependency to [`6.3.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 6.2.0
+
+- Fixed `StreamMessageInputController.textPatternStyle` not matching case-insensitive patterns.
+- Updated `connectivity_plus` dependency to `^4.0.0`
+- Fixed `StreamChannel` shows black screen while loading in some cases.
+- Updated `stream_chat` dependency to [`6.2.0`](https://pub.dev/packages/stream_chat/changelog).
+
+## 6.1.0
+
+- Updated `dart` sdk environment range to support `3.0.0`.
+- Updated `stream_chat` dependency to [`6.1.0`](https://pub.dev/packages/stream_chat/changelog).
+- [[#1356]](https://github.com/GetStream/stream-chat-flutter/issues/1356) Channel doesn't auto display again after being
+  hidden.
+- [[#1540]](https://github.com/GetStream/stream-chat-flutter/issues/1540) Use `CircularProgressIndicator.adaptive`
+  instead of material indicator.
+
+## 6.0.0
+
+- Updated dependencies to resolvable versions.
+
+## 5.3.0
+
+- Updated `stream_chat` dependency to [`5.3.0`](https://pub.dev/packages/stream_chat/changelog).
+
 ## 5.2.0
 
 🔄 Changed

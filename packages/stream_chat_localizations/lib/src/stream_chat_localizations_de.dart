@@ -15,6 +15,9 @@ class StreamChatLocalizationsDe extends GlobalStreamChatLocalizations {
   String get noUsersLabel => 'Derzeit gibt es keine User';
 
   @override
+  String get noPhotoOrVideoLabel => 'Es gibt kein Foto oder Video';
+
+  @override
   String get retryLabel => 'Erneut versuchen';
 
   @override
@@ -236,13 +239,15 @@ class StreamChatLocalizationsDe extends GlobalStreamChatLocalizations {
     } else if (date == yesterday) {
       return 'Gestern';
     } else {
-      return 'am ${Jiffy(date).MMMd}';
+      return 'am ${Jiffy.parseFromDateTime(date).MMMd}';
     }
   }
 
   @override
-  String sentAtText({required DateTime date, required DateTime time}) =>
-      'Gesendet ${_getDay(date)} am ${Jiffy(time.toLocal()).format('HH:mm')}';
+  String sentAtText({required DateTime date, required DateTime time}) {
+    final atTime = Jiffy.parseFromDateTime(time.toLocal());
+    return 'Gesendet ${_getDay(date)} am ${atTime.jm}';
+  }
 
   @override
   String get todayLabel => 'Heute';
@@ -428,12 +433,7 @@ class StreamChatLocalizationsDe extends GlobalStreamChatLocalizations {
   String get viewLibrary => 'Bibliothek öffnen';
 
   @override
-  String unreadMessagesSeparatorText(int unreadCount) {
-    if (unreadCount == 1) {
-      return '1 ungelesene Nachricht';
-    }
-    return '$unreadCount ungelesene Nachrichten';
-  }
+  String unreadMessagesSeparatorText(int unreadCount) => 'Neue Nachrichten';
 
   @override
   String get enableFileAccessMessage =>

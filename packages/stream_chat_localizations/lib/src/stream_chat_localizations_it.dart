@@ -15,6 +15,9 @@ class StreamChatLocalizationsIt extends GlobalStreamChatLocalizations {
   String get noUsersLabel => "Non c'é nessun utente al momento";
 
   @override
+  String get noPhotoOrVideoLabel => 'Non ci sono foto o video';
+
+  @override
   String get retryLabel => 'Riprova';
 
   @override
@@ -249,13 +252,15 @@ Il file è troppo grande per essere caricato. Il limite è di $limitInMB MB.''';
     } else if (date == yesterday) {
       return 'ieri';
     } else {
-      return 'il ${Jiffy(date).MMMd}';
+      return 'il ${Jiffy.parseFromDateTime(date).MMMd}';
     }
   }
 
   @override
-  String sentAtText({required DateTime date, required DateTime time}) =>
-      "Inviato ${_getDay(date)} alle ${Jiffy(time.toLocal()).format('HH:mm')}";
+  String sentAtText({required DateTime date, required DateTime time}) {
+    final atTime = Jiffy.parseFromDateTime(time.toLocal());
+    return 'Inviato ${_getDay(date)} alle ${atTime.jm}';
+  }
 
   @override
   String get todayLabel => 'Oggi';
@@ -439,12 +444,7 @@ Attenzione: il limite massimo di $limit file è stato superato.
   String get linkDisabledError => 'I links sono disattivati';
 
   @override
-  String unreadMessagesSeparatorText(int unreadCount) {
-    if (unreadCount == 1) {
-      return '1 messaggio non letto';
-    }
-    return '$unreadCount messaggi non letti';
-  }
+  String unreadMessagesSeparatorText(int unreadCount) => 'Nouveaux messages';
 
   @override
   String get enableFileAccessMessage => "Per favore attiva l'accesso ai file"

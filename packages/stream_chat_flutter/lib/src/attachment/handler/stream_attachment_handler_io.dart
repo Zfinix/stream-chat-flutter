@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stream_chat_flutter/src/attachment/handler/common.dart';
@@ -21,14 +21,31 @@ class StreamAttachmentHandlerDesktop extends StreamAttachmentHandler {
     Map<String, dynamic>? queryParameters,
     CancelToken? cancelToken,
     Options? options,
-  }) {
-    return downloadWebOrDesktopAttachment(
+  }) async {
+    final data = await downloadAttachmentData(
       attachment,
       onReceiveProgress: onReceiveProgress,
       queryParameters: queryParameters,
       cancelToken: cancelToken,
       options: options,
     );
+
+    // Open the native file browser so the user can select the save location.
+    final saveLocation = await getSaveLocation(suggestedName: data.fileName);
+    if (saveLocation == null) {
+      // Operation was canceled by the user.
+      return null;
+    }
+
+    // Get the path to the user's selected location.
+    final path = saveLocation.path;
+
+    // Create an XFile for proper file saving.
+    final file = data.toXFile(path: path);
+
+    // Save the file to the user's selected path.
+    await file.saveTo(path);
+    return path;
   }
 }
 
@@ -123,8 +140,9 @@ class StreamAttachmentHandler extends StreamAttachmentHandlerBase {
 
     final tempDir = await getTemporaryDirectory();
     final tempPath = Uri.file(tempDir.path, windows: CurrentPlatform.isWindows);
-    final tempFilePath = tempPath.resolve(fileName!).path;
-    print(tempFilePath);
+    final tempFilePath = tempPath
+        .resolve(fileName!)
+        .toFilePath(windows: CurrentPlatform.isWindows);
 
     final attachmentFileBytes = attachmentFile.bytes;
     if (attachmentFileBytes == null) {
@@ -158,56 +176,41 @@ class StreamAttachmentHandler extends StreamAttachmentHandlerBase {
     CancelToken? cancelToken,
     Options? options,
   }) async {
-    final type = attachment.type;
-
-    String? downloadUrl;
-    String? fileName;
-    /* ---IMAGES/GIFS--- */
-    if (type == 'image') {
-      downloadUrl = attachment.imageUrl ?? attachment.assetUrl;
-      fileName = attachment.title;
-      fileName ??= 'attachment.${attachment.mimeType ?? 'png'}';
-    }
-    /* ---GIPHY's--- */
-    else if (type == 'giphy') {
-      downloadUrl = attachment.thumbUrl;
-      fileName = '${attachment.title}.gif';
-    }
-    /* ---FILES AND VIDEOS--- */
-    else if (type == 'file' || type == 'video') {
-      downloadUrl = attachment.assetUrl;
-      fileName = attachment.title;
-    }
-
-    assert(
-      downloadUrl != null,
-      'Attachment must have an assetUrl or imageUrl or thumbUrl',
-    );
-
-    final response = await Dio().get<List<int>>(
-      downloadUrl!,
+    final data = await downloadAttachmentData(
+      attachment,
       onReceiveProgress: onReceiveProgress,
       queryParameters: queryParameters,
       cancelToken: cancelToken,
-      // set responseType to `bytes`
-      options: options?.copyWith(responseType: ResponseType.bytes) ??
-          Options(responseType: ResponseType.bytes),
+      options: options,
     );
 
     final appDir = await getTemporaryDirectory();
-    final ext = Uri.parse(downloadUrl).pathSegments.last;
+    final ext = Uri.parse(data.downloadUrl).pathSegments.last;
     final path = '${appDir.path}/${attachment.id}.$ext';
 
-    // Create an XFile for proper file saving
-    final file = XFile.fromData(
-      Uint8List.fromList(response.data!),
-      mimeType: attachment.mimeType,
-      name: fileName,
-      path: path,
-    );
+    // Create an XFile for proper file saving.
+    final file = data.toXFile(path: path);
 
-    // Save the file to the user's selected path.
+    // Save the file to a temporary location.
     await file.saveTo(path);
+
+    // Now that the file is saved, we need to copy it to the user's gallery
+    // because the gallery only shows files that are in the gallery folder.
+    await ImageGallerySaver.saveFile(path);
+
+    // Once the file is copied to the gallery, we can delete the temporary file.
+    await file.delete();
+
     return path;
+  }
+}
+
+extension on XFile {
+  /// Deletes this xfile from the file system.
+  Future<void> delete() async {
+    final file = File(path);
+    if (file.existsSync()) {
+      await file.delete();
+    }
   }
 }

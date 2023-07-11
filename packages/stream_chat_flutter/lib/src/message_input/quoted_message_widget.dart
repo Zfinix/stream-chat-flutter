@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/platform_widget_builder/platform_widget_builder.dart';
 import 'package:stream_chat_flutter/src/message_input/clear_input_item_button.dart';
-import 'package:stream_chat_flutter/src/video/video_thumbnail_image.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:video_player/video_player.dart';
 
@@ -20,9 +19,7 @@ class StreamQuotedMessageWidget extends StatelessWidget {
     this.textLimit = 170,
     this.attachmentThumbnailBuilders,
     this.padding = const EdgeInsets.all(8),
-    this.onTap,
     this.onQuotedMessageClear,
-    this.composing = true,
   });
 
   /// The message
@@ -47,14 +44,8 @@ class StreamQuotedMessageWidget extends StatelessWidget {
   /// Padding around the widget
   final EdgeInsetsGeometry padding;
 
-  /// Callback for tap on widget
-  final GestureTapCallback? onTap;
-
   /// Callback for clearing quoted messages.
   final VoidCallback? onQuotedMessageClear;
-
-  /// True if the message is being composed
-  final bool composing;
 
   @override
   Widget build(BuildContext context) {
@@ -63,11 +54,10 @@ class StreamQuotedMessageWidget extends StatelessWidget {
         child: _QuotedMessage(
           message: message,
           textLimit: textLimit,
-          composing: composing,
-          onQuotedMessageClear: onQuotedMessageClear,
           messageTheme: messageTheme,
           showBorder: showBorder,
           reverse: reverse,
+          onQuotedMessageClear: onQuotedMessageClear,
           attachmentThumbnailBuilders: attachmentThumbnailBuilders,
         ),
       ),
@@ -82,19 +72,12 @@ class StreamQuotedMessageWidget extends StatelessWidget {
           showOnlineStatus: false,
         ),
     ];
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Padding(
-          padding: padding,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: reverse ? children.reversed.toList() : children,
-          ),
-        ),
+    return Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: reverse ? children.reversed.toList() : children,
       ),
     );
   }
@@ -104,17 +87,15 @@ class _QuotedMessage extends StatelessWidget {
   const _QuotedMessage({
     required this.message,
     required this.textLimit,
-    required this.composing,
-    required this.onQuotedMessageClear,
     required this.messageTheme,
     required this.showBorder,
     required this.reverse,
+    this.onQuotedMessageClear,
     this.attachmentThumbnailBuilders,
   });
 
   final Message message;
   final int textLimit;
-  final bool composing;
   final VoidCallback? onQuotedMessageClear;
   final StreamMessageThemeData messageTheme;
   final bool showBorder;
@@ -134,6 +115,8 @@ class _QuotedMessage extends StatelessWidget {
   bool get _isGiphy =>
       message.attachments.any((element) => element.type == 'giphy');
 
+  bool get _isDeleted => message.isDeleted || message.deletedAt != null;
+
   @override
   Widget build(BuildContext context) {
     final isOnlyEmoji = message.text!.isOnlyEmoji;
@@ -144,39 +127,54 @@ class _QuotedMessage extends StatelessWidget {
       msg = msg.copyWith(text: '${msg.text!.substring(0, textLimit - 3)}...');
     }
 
-    final children = [
-      if (composing)
-        PlatformWidgetBuilder(
-          web: (context, child) => child,
-          desktop: (context, child) => child,
-          child: ClearInputItemButton(
-            onTap: onQuotedMessageClear,
+    List<Widget> children;
+    if (_isDeleted) {
+      // Show deleted message text
+      children = [
+        Text(
+          context.translations.messageDeletedLabel,
+          style: messageTheme.messageTextStyle?.copyWith(
+            fontStyle: FontStyle.italic,
+            color: messageTheme.createdAtStyle?.color,
           ),
         ),
-      if (_hasAttachments)
-        _ParseAttachments(
-          message: message,
-          messageTheme: messageTheme,
-          attachmentThumbnailBuilders: attachmentThumbnailBuilders,
-        ),
-      if (msg.text!.isNotEmpty && !_isGiphy)
-        Flexible(
-          child: StreamMessageText(
-            message: msg,
-            messageTheme: isOnlyEmoji && _containsText
-                ? messageTheme.copyWith(
-                    messageTextStyle: messageTheme.messageTextStyle?.copyWith(
-                      fontSize: 32,
-                    ),
-                  )
-                : messageTheme.copyWith(
-                    messageTextStyle: messageTheme.messageTextStyle?.copyWith(
-                      fontSize: 12,
-                    ),
-                  ),
+      ];
+    } else {
+      // Show quoted message
+      children = [
+        if (onQuotedMessageClear != null)
+          PlatformWidgetBuilder(
+            web: (context, child) => child,
+            desktop: (context, child) => child,
+            child: ClearInputItemButton(
+              onTap: onQuotedMessageClear,
+            ),
           ),
-        ),
-    ].insertBetween(const SizedBox(width: 8));
+        if (_hasAttachments)
+          _ParseAttachments(
+            message: message,
+            messageTheme: messageTheme,
+            attachmentThumbnailBuilders: attachmentThumbnailBuilders,
+          ),
+        if (msg.text!.isNotEmpty && !_isGiphy)
+          Flexible(
+            child: StreamMessageText(
+              message: msg,
+              messageTheme: isOnlyEmoji && _containsText
+                  ? messageTheme.copyWith(
+                      messageTextStyle: messageTheme.messageTextStyle?.copyWith(
+                        fontSize: 32,
+                      ),
+                    )
+                  : messageTheme.copyWith(
+                      messageTextStyle: messageTheme.messageTextStyle?.copyWith(
+                        fontSize: 12,
+                      ),
+                    ),
+            ),
+          ),
+      ].insertBetween(const SizedBox(width: 8));
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -204,8 +202,8 @@ class _QuotedMessage extends StatelessWidget {
   }
 
   Color? _getBackgroundColor(BuildContext context) {
-    if (_containsLinkAttachment) {
-      return messageTheme.linkBackgroundColor;
+    if (_containsLinkAttachment && !_isDeleted) {
+      return messageTheme.urlAttachmentBackgroundColor;
     }
     return messageTheme.messageBackgroundColor;
   }
@@ -248,23 +246,26 @@ class _ParseAttachments extends StatelessWidget {
         child = attachmentBuilder(context, attachment);
       }
     }
-    child = AbsorbPointer(child: child);
+
+    final isImageFile = attachment.title?.mimeType?.type == 'image';
+    final isVideoFile = attachment.title?.mimeType?.type == 'video';
+
     return Material(
       clipBehavior: Clip.hardEdge,
       type: MaterialType.transparency,
-      shape: attachment.type == 'file'
+      shape: attachment.type == 'file' && (!isImageFile && !isVideoFile)
           ? null
           : RoundedRectangleBorder(
               side: const BorderSide(width: 0, color: Colors.transparent),
               borderRadius: BorderRadius.circular(8),
             ),
-      child: child,
+      child: AbsorbPointer(child: child),
     );
   }
 
   Map<String, QuotedMessageAttachmentThumbnailBuilder>
       get _defaultAttachmentBuilder {
-    return {
+    final builders = <String, QuotedMessageAttachmentThumbnailBuilder>{
       'image': (_, attachment) {
         return StreamImageAttachment(
           attachment: attachment,
@@ -293,7 +294,7 @@ class _ParseAttachments extends StatelessWidget {
               width: size.width,
               height: size.height,
               child: const Center(
-                child: CircularProgressIndicator(),
+                child: CircularProgressIndicator.adaptive(),
               ),
             );
           },
@@ -305,16 +306,33 @@ class _ParseAttachments extends StatelessWidget {
           fit: BoxFit.cover,
         );
       },
-      'file': (_, attachment) {
-        return SizedBox(
-          height: 32,
-          width: 32,
-          child: getFileTypeImage(
-            attachment.extraData['mime_type'] as String?,
-          ),
-        );
-      },
     };
+
+    builders['file'] = (_, attachment) {
+      return SizedBox(
+        height: 32,
+        width: 32,
+        child: Builder(
+          builder: (context) {
+            final isImageFile = attachment.title?.mimeType?.type == 'image';
+            if (isImageFile) {
+              return builders['image']!(context, attachment);
+            }
+
+            final isVideoFile = attachment.title?.mimeType?.type == 'video';
+            if (isVideoFile) {
+              return builders['video']!(context, attachment);
+            }
+
+            return getFileTypeImage(
+              attachment.extraData['mime_type'] as String?,
+            );
+          },
+        ),
+      );
+    };
+
+    return builders;
   }
 }
 
@@ -364,8 +382,9 @@ class _VideoAttachmentThumbnailState extends State<_VideoAttachmentThumbnail> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.attachment.assetUrl!)
-      ..initialize().then((_) {
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.attachment.assetUrl!),
+    )..initialize().then((_) {
         // ignore: no-empty-block
         setState(() {}); //when your thumbnail will show.
       });
@@ -384,7 +403,7 @@ class _VideoAttachmentThumbnailState extends State<_VideoAttachmentThumbnail> {
       width: 32,
       child: _controller.value.isInitialized
           ? VideoPlayer(_controller)
-          : const CircularProgressIndicator(),
+          : const CircularProgressIndicator.adaptive(),
     );
   }
 }

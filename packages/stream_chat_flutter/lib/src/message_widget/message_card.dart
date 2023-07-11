@@ -29,6 +29,7 @@ class MessageCard extends StatefulWidget {
     this.borderSide,
     this.borderRadiusGeometry,
     this.textBuilder,
+    this.quotedMessageBuilder,
     this.onLinkTap,
     this.onMentionTap,
     this.onQuotedMessageTap,
@@ -82,6 +83,9 @@ class MessageCard extends StatefulWidget {
   /// {@macro textBuilder}
   final Widget Function(BuildContext, Message)? textBuilder;
 
+  /// {@macro quotedMessageBuilder}
+  final Widget Function(BuildContext, Message)? quotedMessageBuilder;
+
   /// {@macro onLinkTap}
   final void Function(String)? onLinkTap;
 
@@ -129,8 +133,12 @@ class _MessageCardState extends State<MessageCard> {
 
   @override
   Widget build(BuildContext context) {
+    final onQuotedMessageTap = widget.onQuotedMessageTap;
+    final quotedMessageBuilder = widget.quotedMessageBuilder;
+
     return Card(
       elevation: 0,
+      clipBehavior: Clip.hardEdge,
       margin: EdgeInsets.symmetric(
         horizontal: (widget.isFailedState ? 15.0 : 0.0) +
             (widget.showUserAvatar == DisplayWidget.gone ? 0 : 4.0),
@@ -139,7 +147,8 @@ class _MessageCardState extends State<MessageCard> {
           RoundedRectangleBorder(
             side: widget.borderSide ??
                 BorderSide(
-                  color: widget.messageTheme.messageBorderColor ?? Colors.grey,
+                  color: widget.messageTheme.messageBorderColor ??
+                      Colors.transparent,
                 ),
             borderRadius: widget.borderRadiusGeometry ?? BorderRadius.zero,
           ),
@@ -149,15 +158,27 @@ class _MessageCardState extends State<MessageCard> {
           maxWidth: widthLimit ?? double.infinity,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.hasQuotedMessage)
-              QuotedMessage(
-                reverse: widget.reverse,
-                message: widget.message,
-                hasNonUrlAttachments: widget.hasNonUrlAttachments,
-                onQuotedMessageTap: widget.onQuotedMessageTap,
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: InkWell(
+                  onTap: !widget.message.quotedMessage!.isDeleted &&
+                          onQuotedMessageTap != null
+                      ? () => onQuotedMessageTap(widget.message.quotedMessageId)
+                      : null,
+                  child: quotedMessageBuilder?.call(
+                        context,
+                        widget.message.quotedMessage!,
+                      ) ??
+                      QuotedMessage(
+                        reverse: widget.reverse,
+                        message: widget.message,
+                        hasNonUrlAttachments: widget.hasNonUrlAttachments,
+                      ),
+                ),
               ),
             if (widget.hasNonUrlAttachments)
               ParseAttachments(
@@ -167,19 +188,16 @@ class _MessageCardState extends State<MessageCard> {
                 attachmentPadding: widget.attachmentPadding,
               ),
             if (!widget.isGiphy)
-              ConstrainedBox(
-                constraints: BoxConstraints.loose(const Size.fromWidth(500)),
-                child: TextBubble(
-                  messageTheme: widget.messageTheme,
-                  message: widget.message,
-                  textPadding: widget.textPadding,
-                  textBuilder: widget.textBuilder,
-                  isOnlyEmoji: widget.isOnlyEmoji,
-                  hasQuotedMessage: widget.hasQuotedMessage,
-                  hasUrlAttachments: widget.hasUrlAttachments,
-                  onLinkTap: widget.onLinkTap,
-                  onMentionTap: widget.onMentionTap,
-                ),
+              TextBubble(
+                messageTheme: widget.messageTheme,
+                message: widget.message,
+                textPadding: widget.textPadding,
+                textBuilder: widget.textBuilder,
+                isOnlyEmoji: widget.isOnlyEmoji,
+                hasQuotedMessage: widget.hasQuotedMessage,
+                hasUrlAttachments: widget.hasUrlAttachments,
+                onLinkTap: widget.onLinkTap,
+                onMentionTap: widget.onMentionTap,
               ),
             if (widget.hasUrlAttachments && !widget.hasQuotedMessage)
               _buildUrlAttachment(),
@@ -215,7 +233,7 @@ class _MessageCardState extends State<MessageCard> {
     }
 
     if (widget.hasUrlAttachments) {
-      return widget.messageTheme.linkBackgroundColor;
+      return widget.messageTheme.urlAttachmentBackgroundColor;
     }
 
     if (widget.isOnlyEmoji) {

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/src/theme/avatar_theme.dart';
@@ -20,8 +22,16 @@ class StreamMessageThemeData with Diagnosticable {
     this.reactionsMaskColor,
     this.avatarTheme,
     this.createdAtStyle,
-    this.linkBackgroundColor,
-  });
+    @Deprecated('Use urlAttachmentBackgroundColor instead')
+    Color? linkBackgroundColor,
+    Color? urlAttachmentBackgroundColor,
+    this.urlAttachmentHostStyle,
+    this.urlAttachmentTitleStyle,
+    this.urlAttachmentTextStyle,
+    this.urlAttachmentTitleMaxLine,
+    this.urlAttachmentTextMaxLine,
+  }) : urlAttachmentBackgroundColor =
+            urlAttachmentBackgroundColor ?? linkBackgroundColor;
 
   /// Text style for message text
   final TextStyle? messageTextStyle;
@@ -57,7 +67,26 @@ class StreamMessageThemeData with Diagnosticable {
   final StreamAvatarThemeData? avatarTheme;
 
   /// Background color for messages with url attachments.
-  final Color? linkBackgroundColor;
+  @Deprecated('Use urlAttachmentBackgroundColor instead')
+  Color? get linkBackgroundColor => urlAttachmentBackgroundColor;
+
+  /// Background color for messages with url attachments.
+  final Color? urlAttachmentBackgroundColor;
+
+  /// Color for url attachment host.
+  final TextStyle? urlAttachmentHostStyle;
+
+  /// Color for url attachment title.
+  final TextStyle? urlAttachmentTitleStyle;
+
+  /// Color for url attachment text.
+  final TextStyle? urlAttachmentTextStyle;
+
+  /// Max number of lines in Url link title.
+  final int? urlAttachmentTitleMaxLine;
+
+  /// Max number of lines in Url link text.
+  final int? urlAttachmentTextMaxLine;
 
   /// Copy with a theme
   StreamMessageThemeData copyWith({
@@ -72,7 +101,14 @@ class StreamMessageThemeData with Diagnosticable {
     Color? reactionsBackgroundColor,
     Color? reactionsBorderColor,
     Color? reactionsMaskColor,
+    @Deprecated('Use urlAttachmentBackgroundColor instead')
     Color? linkBackgroundColor,
+    Color? urlAttachmentBackgroundColor,
+    TextStyle? urlAttachmentHostStyle,
+    TextStyle? urlAttachmentTitleStyle,
+    TextStyle? urlAttachmentTextStyle,
+    int? urlAttachmentTitleMaxLine,
+    int? urlAttachmentTextMaxLine,
   }) {
     return StreamMessageThemeData(
       messageTextStyle: messageTextStyle ?? this.messageTextStyle,
@@ -88,7 +124,19 @@ class StreamMessageThemeData with Diagnosticable {
           reactionsBackgroundColor ?? this.reactionsBackgroundColor,
       reactionsBorderColor: reactionsBorderColor ?? this.reactionsBorderColor,
       reactionsMaskColor: reactionsMaskColor ?? this.reactionsMaskColor,
-      linkBackgroundColor: linkBackgroundColor ?? this.linkBackgroundColor,
+      urlAttachmentBackgroundColor: urlAttachmentBackgroundColor ??
+          linkBackgroundColor ??
+          this.urlAttachmentBackgroundColor,
+      urlAttachmentHostStyle:
+          urlAttachmentHostStyle ?? this.urlAttachmentHostStyle,
+      urlAttachmentTitleStyle:
+          urlAttachmentTitleStyle ?? this.urlAttachmentTitleStyle,
+      urlAttachmentTextStyle:
+          urlAttachmentTextStyle ?? this.urlAttachmentTextStyle,
+      urlAttachmentTitleMaxLine:
+          urlAttachmentTitleMaxLine ?? this.urlAttachmentTitleMaxLine,
+      urlAttachmentTextMaxLine:
+          urlAttachmentTextMaxLine ?? this.urlAttachmentTextMaxLine,
     );
   }
 
@@ -122,8 +170,33 @@ class StreamMessageThemeData with Diagnosticable {
       reactionsMaskColor:
           Color.lerp(a.reactionsMaskColor, b.reactionsMaskColor, t),
       repliesStyle: TextStyle.lerp(a.repliesStyle, b.repliesStyle, t),
-      linkBackgroundColor:
-          Color.lerp(a.linkBackgroundColor, b.linkBackgroundColor, t),
+      urlAttachmentBackgroundColor: Color.lerp(
+        a.urlAttachmentBackgroundColor,
+        b.urlAttachmentBackgroundColor,
+        t,
+      ),
+      urlAttachmentHostStyle:
+          TextStyle.lerp(a.urlAttachmentHostStyle, b.urlAttachmentHostStyle, t),
+      urlAttachmentTextStyle: TextStyle.lerp(
+        a.urlAttachmentTextStyle,
+        b.urlAttachmentTextStyle,
+        t,
+      ),
+      urlAttachmentTitleStyle: TextStyle.lerp(
+        a.urlAttachmentTitleStyle,
+        b.urlAttachmentTitleStyle,
+        t,
+      ),
+      urlAttachmentTitleMaxLine: lerpDouble(
+        a.urlAttachmentTitleMaxLine,
+        b.urlAttachmentTitleMaxLine,
+        t,
+      )?.round(),
+      urlAttachmentTextMaxLine: lerpDouble(
+        a.urlAttachmentTextMaxLine,
+        b.urlAttachmentTextMaxLine,
+        t,
+      )?.round(),
     );
   }
 
@@ -147,7 +220,12 @@ class StreamMessageThemeData with Diagnosticable {
       reactionsBackgroundColor: other.reactionsBackgroundColor,
       reactionsBorderColor: other.reactionsBorderColor,
       reactionsMaskColor: other.reactionsMaskColor,
-      linkBackgroundColor: other.linkBackgroundColor,
+      urlAttachmentBackgroundColor: other.urlAttachmentBackgroundColor,
+      urlAttachmentHostStyle: other.urlAttachmentHostStyle,
+      urlAttachmentTitleStyle: other.urlAttachmentTitleStyle,
+      urlAttachmentTextStyle: other.urlAttachmentTextStyle,
+      urlAttachmentTitleMaxLine: other.urlAttachmentTitleMaxLine,
+      urlAttachmentTextMaxLine: other.urlAttachmentTextMaxLine,
     );
   }
 
@@ -167,7 +245,12 @@ class StreamMessageThemeData with Diagnosticable {
           reactionsBorderColor == other.reactionsBorderColor &&
           reactionsMaskColor == other.reactionsMaskColor &&
           avatarTheme == other.avatarTheme &&
-          linkBackgroundColor == other.linkBackgroundColor;
+          urlAttachmentBackgroundColor == other.urlAttachmentBackgroundColor &&
+          urlAttachmentHostStyle == other.urlAttachmentHostStyle &&
+          urlAttachmentTitleStyle == other.urlAttachmentTitleStyle &&
+          urlAttachmentTextStyle == other.urlAttachmentTextStyle &&
+          urlAttachmentTitleMaxLine == other.urlAttachmentTitleMaxLine &&
+          urlAttachmentTextMaxLine == other.urlAttachmentTextMaxLine;
 
   @override
   int get hashCode =>
@@ -182,7 +265,12 @@ class StreamMessageThemeData with Diagnosticable {
       reactionsBorderColor.hashCode ^
       reactionsMaskColor.hashCode ^
       avatarTheme.hashCode ^
-      linkBackgroundColor.hashCode;
+      urlAttachmentBackgroundColor.hashCode ^
+      urlAttachmentHostStyle.hashCode ^
+      urlAttachmentTitleStyle.hashCode ^
+      urlAttachmentTextStyle.hashCode ^
+      urlAttachmentTitleMaxLine.hashCode ^
+      urlAttachmentTextMaxLine.hashCode;
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -199,6 +287,29 @@ class StreamMessageThemeData with Diagnosticable {
       ..add(ColorProperty('reactionsBackgroundColor', reactionsBackgroundColor))
       ..add(ColorProperty('reactionsBorderColor', reactionsBorderColor))
       ..add(ColorProperty('reactionsMaskColor', reactionsMaskColor))
-      ..add(ColorProperty('linkBackgroundColor', linkBackgroundColor));
+      ..add(ColorProperty(
+        'urlAttachmentBackgroundColor',
+        urlAttachmentBackgroundColor,
+      ))
+      ..add(DiagnosticsProperty(
+        'urlAttachmentHostStyle',
+        urlAttachmentHostStyle,
+      ))
+      ..add(DiagnosticsProperty(
+        'urlAttachmentTitleStyle',
+        urlAttachmentTitleStyle,
+      ))
+      ..add(DiagnosticsProperty(
+        'urlAttachmentTextStyle',
+        urlAttachmentTextStyle,
+      ))
+      ..add(DiagnosticsProperty(
+        'urlAttachmentTitleMaxLine',
+        urlAttachmentTitleMaxLine,
+      ))
+      ..add(DiagnosticsProperty(
+        'urlAttachmentTextMaxLine',
+        urlAttachmentTextMaxLine,
+      ));
   }
 }

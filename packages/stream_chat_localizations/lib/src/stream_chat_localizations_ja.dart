@@ -15,6 +15,9 @@ class StreamChatLocalizationsJa extends GlobalStreamChatLocalizations {
   String get noUsersLabel => '現在、ユーザーはいません。';
 
   @override
+  String get noPhotoOrVideoLabel => '写真やビデオはありません';
+
+  @override
   String get retryLabel => '再試行';
 
   @override
@@ -233,13 +236,15 @@ class StreamChatLocalizationsJa extends GlobalStreamChatLocalizations {
     } else if (date == yesterday) {
       return '昨日';
     } else {
-      return '${Jiffy(date).MMMd}に';
+      return '${Jiffy.parseFromDateTime(date).MMMd}に';
     }
   }
 
   @override
-  String sentAtText({required DateTime date, required DateTime time}) =>
-      '${_getDay(date)}の${Jiffy(time.toLocal()).format('HH:mm')}に送信しました ';
+  String sentAtText({required DateTime date, required DateTime time}) {
+    final atTime = Jiffy.parseFromDateTime(time.toLocal());
+    return '${_getDay(date)}の${atTime.jm}に送信しました ';
+  }
 
   @override
   String get todayLabel => '今日';
@@ -415,12 +420,7 @@ class StreamChatLocalizationsJa extends GlobalStreamChatLocalizations {
   String get linkDisabledError => 'リンクが無効になっています';
 
   @override
-  String unreadMessagesSeparatorText(int unreadCount) {
-    if (unreadCount == 1) {
-      return '未読メッセージ1通';
-    }
-    return '$unreadCountつの未読メッセージ';
-  }
+  String unreadMessagesSeparatorText(int unreadCount) => '新しいメッセージ。';
 
   @override
   String get enableFileAccessMessage =>
