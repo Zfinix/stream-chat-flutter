@@ -147,6 +147,7 @@ class StreamMessageInput extends StatefulWidget {
         _defaultClearQuotedMessageKeyPredicate,
     this.ogPreviewFilter = _defaultOgPreviewFilter,
     this.hintGetter = _defaultHintGetter,
+    this.contentInsertionConfiguration,
   });
 
   /// The predicate used to send a message on desktop/web
@@ -340,6 +341,9 @@ class StreamMessageInput extends StatefulWidget {
   /// Returns the hint text for the message input.
   final HintGetter hintGetter;
 
+  /// {@macro flutter.widgets.editableText.contentInsertionConfiguration}
+  final ContentInsertionConfiguration? contentInsertionConfiguration;
+
   static String? _defaultHintGetter(
     BuildContext context,
     HintType type,
@@ -400,8 +404,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
   bool get _hasQuotedMessage =>
       _effectiveController.message.quotedMessage != null;
 
-  bool get _isEditing =>
-      _effectiveController.message.status != MessageSendingStatus.sending;
+  bool get _isEditing => !_effectiveController.message.state.isInitial;
 
   BoxBorder? _draggingBorder;
 
@@ -587,7 +590,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_hasQuotedMessage)
+                  if (_hasQuotedMessage && !_isEditing)
                     // Ensure this doesn't show on web & desktop
                     PlatformWidgetBuilder(
                       mobile: (context, child) => child,
@@ -816,6 +819,7 @@ class StreamMessageInputState extends State<StreamMessageInput>
   Future<void> _onAttachmentButtonPressed() async {
     final attachments = await showStreamAttachmentPickerModalBottomSheet(
       context: context,
+      onError: widget.onError,
       allowedTypes: widget.allowedAttachmentPickerTypes,
       initialAttachments: _effectiveController.attachments,
     );
@@ -905,6 +909,8 @@ class StreamMessageInputState extends State<StreamMessageInput>
                         decoration: _getInputDecoration(context),
                         textCapitalization: widget.textCapitalization,
                         autocorrect: widget.autoCorrect,
+                        contentInsertionConfiguration:
+                            widget.contentInsertionConfiguration,
                       ),
                     ),
                   ),
@@ -1386,10 +1392,12 @@ class StreamMessageInputState extends State<StreamMessageInput>
       skipEnrichUrl: skipEnrichUrl,
     );
 
-    if (shouldKeepFocus) {
-      FocusScope.of(context).requestFocus(_effectiveFocusNode);
-    } else {
-      FocusScope.of(context).unfocus();
+    if (mounted) {
+      if (shouldKeepFocus) {
+        FocusScope.of(context).requestFocus(_effectiveFocusNode);
+      } else {
+        FocusScope.of(context).unfocus();
+      }
     }
   }
 

@@ -582,7 +582,7 @@ class Channel {
     // Eg. Updating the message while the previous call is in progress.
     _messageAttachmentsUploadCompleter
         .remove(message.id)
-        ?.completeError('Message Cancelled');
+        ?.completeError(const StreamChatError('Message cancelled'));
 
     final quotedMessage = state!.messages.firstWhereOrNull(
       (m) => m.id == message.quotedMessageId,
@@ -592,7 +592,7 @@ class Channel {
       localCreatedAt: DateTime.now(),
       user: _client.state.currentUser,
       quotedMessage: quotedMessage,
-      status: MessageSendingStatus.sending,
+      state: MessageState.sending,
       attachments: message.attachments.map(
         (it) {
           if (it.uploadState.isSuccess) return it;
@@ -630,15 +630,24 @@ class Channel {
         ),
       );
 
-      final sentMessage = response.message.syncWith(message);
+      final sentMessage = response.message.syncWith(message).copyWith(
+            // Update the message state to sent.
+            state: MessageState.sent,
+          );
 
       state!.updateMessage(sentMessage);
       if (cooldown > 0) cooldownStartedAt = DateTime.now();
       return response;
     } catch (e) {
       if (e is StreamChatNetworkError && e.isRetriable) {
-        state!._retryQueue.add([message]);
+        state!._retryQueue.add([
+          message.copyWith(
+            // Update the message state to failed.
+            state: MessageState.sendingFailed,
+          ),
+        ]);
       }
+
       rethrow;
     }
   }
@@ -653,17 +662,18 @@ class Channel {
     Message message, {
     bool skipEnrichUrl = false,
   }) async {
+    _checkInitialized();
     final originalMessage = message;
 
     // Cancelling previous completer in case it's called again in the process
     // Eg. Updating the message while the previous call is in progress.
     _messageAttachmentsUploadCompleter
         .remove(message.id)
-        ?.completeError('Message Cancelled');
+        ?.completeError(const StreamChatError('Message cancelled'));
 
     // ignore: parameter_assignments
     message = message.copyWith(
-      status: MessageSendingStatus.updating,
+      state: MessageState.updating,
       localUpdatedAt: DateTime.now(),
       attachments: message.attachments.map(
         (it) {
@@ -699,19 +709,30 @@ class Channel {
         ),
       );
 
-      final updatedMessage = response.message
-          .syncWith(message)
-          .copyWith(ownReactions: message.ownReactions);
+      final updateMessage = response.message.syncWith(message).copyWith(
+            // Update the message state to updated.
+            state: MessageState.updated,
+            ownReactions: message.ownReactions,
+          );
 
-      state?.updateMessage(updatedMessage);
+      state?.updateMessage(updateMessage);
 
       return response;
     } catch (e) {
       if (e is StreamChatNetworkError) {
         if (e.isRetriable) {
-          state!._retryQueue.add([message]);
+          state!._retryQueue.add([
+            message.copyWith(
+              // Update the message state to failed.
+              state: MessageState.updatingFailed,
+            ),
+          ]);
         } else {
-          state?.updateMessage(originalMessage);
+          // Reset the message to original state if the update fails and is not
+          // retriable.
+          state?.updateMessage(originalMessage.copyWith(
+            state: MessageState.updatingFailed,
+          ));
         }
       }
       rethrow;
@@ -729,6 +750,23 @@ class Channel {
     List<String>? unset,
     bool skipEnrichUrl = false,
   }) async {
+    _checkInitialized();
+    final originalMessage = message;
+
+    // Cancelling previous completer in case it's called again in the process
+    // Eg. Updating the message while the previous call is in progress.
+    _messageAttachmentsUploadCompleter
+        .remove(message.id)
+        ?.completeError(const StreamChatError('Message cancelled'));
+
+    // ignore: parameter_assignments
+    message = message.copyWith(
+      state: MessageState.updating,
+      localUpdatedAt: DateTime.now(),
+    );
+
+    state?.updateMessage(message);
+
     try {
       // Wait for the previous update call to finish. Otherwise, the order of
       // messages will not be maintained.
@@ -741,17 +779,33 @@ class Channel {
         ),
       );
 
-      final updatedMessage = response.message
-          .syncWith(message)
-          .copyWith(ownReactions: message.ownReactions);
+      final updatedMessage = response.message.syncWith(message).copyWith(
+            // Update the message state to updated.
+            state: MessageState.updated,
+            ownReactions: message.ownReactions,
+          );
 
       state?.updateMessage(updatedMessage);
 
       return response;
     } catch (e) {
-      if (e is StreamChatNetworkError && e.isRetriable) {
-        state!._retryQueue.add([message]);
+      if (e is StreamChatNetworkError) {
+        if (e.isRetriable) {
+          state!._retryQueue.add([
+            message.copyWith(
+              // Update the message state to failed.
+              state: MessageState.updatingFailed,
+            ),
+          ]);
+        } else {
+          // Reset the message to original state if the update fails and is not
+          // retriable.
+          state?.updateMessage(originalMessage.copyWith(
+            state: MessageState.updatingFailed,
+          ));
+        }
       }
+
       rethrow;
     }
   }
@@ -759,39 +813,43 @@ class Channel {
   final _deleteMessageLock = Lock();
 
   /// Deletes the [message] from the channel.
-  Future<EmptyResponse> deleteMessage(Message message, {bool? hard}) async {
-    final hardDelete = hard ?? false;
+  Future<EmptyResponse> deleteMessage(
+    Message message, {
+    bool hard = false,
+  }) async {
+    _checkInitialized();
 
-    // Directly deleting the local messages which are not yet sent to server
-    if (message.status == MessageSendingStatus.sending ||
-        message.status == MessageSendingStatus.failed) {
+    // Directly deleting the local messages which are not yet sent to server.
+    if (message.remoteCreatedAt == null) {
       state!.deleteMessage(
         message.copyWith(
           type: 'deleted',
           localDeletedAt: DateTime.now(),
-          status: MessageSendingStatus.sent,
+          state: MessageState.deleted(hard: hard),
         ),
-        hardDelete: hardDelete,
+        hardDelete: hard,
       );
 
       // Removing the attachments upload completer to stop the `sendMessage`
       // waiting for attachments to complete.
       _messageAttachmentsUploadCompleter
           .remove(message.id)
-          ?.completeError(Exception('Message deleted'));
+          ?.completeError(const StreamChatError('Message deleted'));
+
+      // Returning empty response to mark the api call as success.
       return EmptyResponse();
     }
 
+    // ignore: parameter_assignments
+    message = message.copyWith(
+      type: 'deleted',
+      deletedAt: DateTime.now(),
+      state: MessageState.deleting(hard: hard),
+    );
+
+    state?.deleteMessage(message, hardDelete: hard);
+
     try {
-      // ignore: parameter_assignments
-      message = message.copyWith(
-        type: 'deleted',
-        status: MessageSendingStatus.deleting,
-        deletedAt: message.deletedAt ?? DateTime.now(),
-      );
-
-      state?.deleteMessage(message, hardDelete: hardDelete);
-
       // Wait for the previous delete call to finish. Otherwise, the order of
       // messages will not be maintained.
       final response = await _deleteMessageLock.synchronized(
@@ -799,18 +857,40 @@ class Channel {
       );
 
       final deletedMessage = message.copyWith(
-        status: MessageSendingStatus.sent,
+        state: MessageState.deleted(hard: hard),
       );
 
-      state?.deleteMessage(deletedMessage, hardDelete: hardDelete);
+      state?.deleteMessage(deletedMessage, hardDelete: hard);
 
       return response;
     } catch (e) {
       if (e is StreamChatNetworkError && e.isRetriable) {
-        state!._retryQueue.add([message]);
+        state!._retryQueue.add([
+          message.copyWith(
+            // Update the message state to failed.
+            state: MessageState.deletingFailed(hard: hard),
+          ),
+        ]);
       }
       rethrow;
     }
+  }
+
+  /// Retry the operation on the message based on the failed state.
+  ///
+  /// For example, if the message failed to send, it will retry sending the
+  /// message and vice-versa.
+  Future<Object> retryMessage(Message message) async {
+    assert(message.state.isFailed, 'Message state is not failed');
+
+    return message.state.maybeWhen(
+      failed: (state, _) => state.when(
+        sendingFailed: () => sendMessage(message),
+        updatingFailed: () => updateMessage(message),
+        deletingFailed: (hard) => deleteMessage(message, hard: hard),
+      ),
+      orElse: () => throw StateError('Message state is not failed'),
+    );
   }
 
   /// Pins provided message
@@ -1259,26 +1339,6 @@ class Channel {
     return _client.markChannelRead(id!, type, messageId: messageId);
   }
 
-  /// Loads the initial channel state and watches for changes.
-  Future<ChannelState> watch({bool presence = false}) async {
-    ChannelState response;
-
-    try {
-      response = await query(watch: true, presence: presence);
-    } catch (error, stackTrace) {
-      if (!_initializedCompleter.isCompleted) {
-        _initializedCompleter.completeError(error, stackTrace);
-      }
-      rethrow;
-    }
-
-    if (state == null) {
-      _initState(response);
-    }
-
-    return response;
-  }
-
   void _initState(ChannelState channelState) {
     state = ChannelClientState(this, channelState);
 
@@ -1288,6 +1348,22 @@ class Channel {
     if (!_initializedCompleter.isCompleted) {
       _initializedCompleter.complete(true);
     }
+  }
+
+  /// Loads the initial channel state and watches for changes.
+  Future<ChannelState> watch({
+    bool presence = false,
+    PaginationParams? messagesPagination,
+    PaginationParams? membersPagination,
+    PaginationParams? watchersPagination,
+  }) {
+    return query(
+      watch: true,
+      presence: presence,
+      messagesPagination: messagesPagination,
+      membersPagination: membersPagination,
+      watchersPagination: watchersPagination,
+    );
   }
 
   /// Stop watching the channel.
@@ -1355,7 +1431,7 @@ class Channel {
       );
 
   /// Creates a new channel.
-  Future<ChannelState> create() async => query(state: false);
+  Future<ChannelState> create() => query(state: false);
 
   /// Query the API, get messages, members or other channel fields.
   ///
@@ -1370,23 +1446,28 @@ class Channel {
     PaginationParams? watchersPagination,
     bool preferOffline = false,
   }) async {
-    if (preferOffline && cid != null) {
-      final updatedState = await _client.chatPersistenceClient
-          ?.getChannelStateByCid(cid!, messagePagination: messagesPagination);
-      if (updatedState != null &&
-          updatedState.messages != null &&
-          updatedState.messages!.isNotEmpty) {
-        if (this.state == null) {
-          _initState(updatedState);
-        } else {
-          this.state?.updateChannelState(updatedState);
-        }
-        return updatedState;
-      }
-    }
+    ChannelState? channelState;
 
     try {
-      final updatedState = await _client.queryChannel(
+      // If we prefer offline, we first try to get the channel state from the
+      // offline storage.
+      if (preferOffline && !watch && cid != null) {
+        final persistenceClient = _client.chatPersistenceClient;
+        if (persistenceClient != null) {
+          final cachedState = await persistenceClient.getChannelStateByCid(
+            cid!,
+            messagePagination: messagesPagination,
+          );
+
+          // If the cached state contains messages, we can use it.
+          if (cachedState.messages?.isNotEmpty == true) {
+            channelState = cachedState;
+          }
+        }
+      }
+
+      // If we still don't have the channelState, we try to get it from the API.
+      channelState ??= await _client.queryChannel(
         type,
         channelId: id,
         channelData: _extraData,
@@ -1399,18 +1480,35 @@ class Channel {
       );
 
       if (_id == null) {
-        _id = updatedState.channel!.id;
-        _cid = updatedState.channel!.cid;
+        _id = channelState.channel!.id;
+        _cid = channelState.channel!.cid;
       }
 
-      this.state?.updateChannelState(updatedState);
-      return updatedState;
-    } catch (e) {
-      if (_client.persistenceEnabled) {
-        return _client.chatPersistenceClient!.getChannelStateByCid(
-          cid!,
-          messagePagination: messagesPagination,
-        );
+      // Initialize the channel state if it's not initialized yet.
+      if (this.state == null) {
+        _initState(channelState);
+      } else {
+        // Otherwise, update the channel state.
+        this.state?.updateChannelState(channelState);
+      }
+
+      return channelState;
+    } catch (e, stk) {
+      // If we failed to get the channel state from the API and we were not
+      // supposed to watch the channel, we will try to get the channel state
+      // from the offline storage.
+      if (watch == false) {
+        if (_client.persistenceEnabled) {
+          return _client.chatPersistenceClient!.getChannelStateByCid(
+            cid!,
+            messagePagination: messagesPagination,
+          );
+        }
+      }
+
+      // Otherwise, we will just rethrow the error.
+      if (!_initializedCompleter.isCompleted) {
+        _initializedCompleter.completeError(e, stk);
       }
 
       rethrow;
@@ -1895,15 +1993,7 @@ class ChannelClientState {
   /// Retry failed message.
   Future<void> retryFailedMessages() async {
     final failedMessages = [...messages, ...threads.values.expand((v) => v)]
-        .where(
-          (message) =>
-              message.status != MessageSendingStatus.sent &&
-              message.createdAt.isBefore(
-                DateTime.now().subtract(const Duration(seconds: 5)),
-              ),
-        )
-        .toList();
-
+        .where((it) => it.state.isFailed);
     _retryQueue.add(failedMessages);
   }
 
@@ -2260,6 +2350,26 @@ class ChannelClientState {
         message.user?.id != userId &&
         !userIsMuted &&
         !isThreadMessage;
+  }
+
+  /// Counts the number of unread messages mentioning the current user.
+  ///
+  /// **NOTE**: The method relies on the [Channel.messages] list and doesn't do
+  /// any API call. Therefore, the count might be not reliable as it relies on
+  /// the local data.
+  int countUnreadMentions() {
+    final lastRead = currentUserRead?.lastRead;
+    final userId = _channel.client.state.currentUser?.id;
+
+    var count = 0;
+    for (final message in messages) {
+      if (_countMessageAsUnread(message) &&
+          (lastRead == null || message.createdAt.isAfter(lastRead)) &&
+          message.mentionedUsers.any((user) => user.id == userId) == true) {
+        count++;
+      }
+    }
+    return count;
   }
 
   /// Update threads with updated information about messages.

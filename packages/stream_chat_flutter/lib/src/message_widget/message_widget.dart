@@ -55,6 +55,7 @@ class StreamMessageWidget extends StatefulWidget {
     this.attachmentBorderRadiusGeometry,
     this.onMentionTap,
     this.onMessageTap,
+    this.onReactionsTap,
     bool? showReactionPicker,
     @Deprecated('Use `showReactionPicker` instead')
     bool showReactionPickerIndicator = true,
@@ -563,6 +564,9 @@ class StreamMessageWidget extends StatefulWidget {
   /// {@macro onMessageTap}
   final void Function(Message)? onMessageTap;
 
+  /// {@macro onReactionsTap}
+  final OnReactionsTap? onReactionsTap;
+
   /// {@template customActions}
   /// List of custom actions shown on message long tap
   /// {@endtemplate}
@@ -657,6 +661,7 @@ class StreamMessageWidget extends StatefulWidget {
     bool? translateUserAvatar,
     OnQuotedMessageTap? onQuotedMessageTap,
     void Function(Message)? onMessageTap,
+    OnReactionsTap? onReactionsTap,
     List<StreamMessageAction>? customActions,
     void Function(Message message, Attachment attachment)? onAttachmentTap,
     Widget Function(BuildContext, User)? userAvatarBuilder,
@@ -746,6 +751,7 @@ class StreamMessageWidget extends StatefulWidget {
       translateUserAvatar: translateUserAvatar ?? this.translateUserAvatar,
       onQuotedMessageTap: onQuotedMessageTap ?? this.onQuotedMessageTap,
       onMessageTap: onMessageTap ?? this.onMessageTap,
+      onReactionsTap: onReactionsTap ?? this.onReactionsTap,
       customActions: customActions ?? this.customActions,
       onAttachmentTap: onAttachmentTap ?? this.onAttachmentTap,
       userAvatarBuilder: userAvatarBuilder ?? this.userAvatarBuilder,
@@ -783,13 +789,11 @@ class _StreamMessageWidgetState extends State<StreamMessageWidget>
   /// {@endtemplate}
   bool get hasQuotedMessage => widget.message.quotedMessage != null;
 
-  bool get isSendFailed => widget.message.status == MessageSendingStatus.failed;
+  bool get isSendFailed => widget.message.state.isSendingFailed;
 
-  bool get isUpdateFailed =>
-      widget.message.status == MessageSendingStatus.failed_update;
+  bool get isUpdateFailed => widget.message.state.isUpdatingFailed;
 
-  bool get isDeleteFailed =>
-      widget.message.status == MessageSendingStatus.failed_delete;
+  bool get isDeleteFailed => widget.message.state.isDeletingFailed;
 
   /// {@template isFailedState}
   /// Whether the message has failed to be sent, updated, or deleted.
@@ -905,7 +909,7 @@ class _StreamMessageWidgetState extends State<StreamMessageWidget>
 
     return ConditionalParentBuilder(
       builder: (context, child) {
-        if (!widget.message.isDeleted) {
+        if (!widget.message.state.isDeleted) {
           return ContextMenuArea(
             verticalPadding: 0,
             builder: (_) => _buildContextMenu(),
@@ -927,7 +931,7 @@ class _StreamMessageWidgetState extends State<StreamMessageWidget>
               mobile: (context, child) {
                 return InkWell(
                   onTap: () => widget.onMessageTap!(widget.message),
-                  onLongPress: widget.message.isDeleted && !isFailedState
+                  onLongPress: widget.message.state.isDeleted
                       ? null
                       : () => onLongPress(context),
                   child: child,
@@ -988,7 +992,11 @@ class _StreamMessageWidgetState extends State<StreamMessageWidget>
                       showPinHighlight: widget.showPinHighlight,
                       showReactionPickerTail: widget.showReactionPickerTail,
                       showReactions: showReactions,
-                      onReactionsTap: () => _showMessageReactionsModal(context),
+                      onReactionsTap: () {
+                        widget.onReactionsTap != null
+                            ? widget.onReactionsTap!(widget.message)
+                            : _showMessageReactionsModal(context);
+                      },
                       showUserAvatar: widget.showUserAvatar,
                       streamChat: _streamChat,
                       translateUserAvatar: widget.translateUserAvatar,
@@ -1114,14 +1122,12 @@ class _StreamMessageWidgetState extends State<StreamMessageWidget>
           leading: StreamSvgIcon.iconSendMessage(),
           title: Text(
             context.translations.toggleResendOrResendEditedMessage(
-              isUpdateFailed:
-                  widget.message.status == MessageSendingStatus.failed,
+              isUpdateFailed: widget.message.state.isUpdatingFailed,
             ),
           ),
           onClick: () {
             Navigator.of(context, rootNavigator: true).pop();
-            final isUpdateFailed =
-                widget.message.status == MessageSendingStatus.failed_update;
+            final isUpdateFailed = widget.message.state.isUpdatingFailed;
             final channel = StreamChannel.of(context).channel;
             if (isUpdateFailed) {
               channel.updateMessage(widget.message);
@@ -1216,8 +1222,7 @@ class _StreamMessageWidgetState extends State<StreamMessageWidget>
   }
 
   void onLongPress(BuildContext context) {
-    if (widget.message.isEphemeral ||
-        widget.message.status == MessageSendingStatus.sending) {
+    if (widget.message.isEphemeral || widget.message.state.isOutgoing) {
       return;
     }
 
